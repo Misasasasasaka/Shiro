@@ -28,8 +28,8 @@ const cloneHeaderMenuConfig = (items: IHeaderMenu[]): IHeaderMenu[] =>
   }))
 
 export const HeaderDataConfigureProvider: Component = ({ children }) => {
-  const pageMeta = useAggregationSelector(
-    (aggregationData) => aggregationData.pageMeta,
+  const pages = useAggregationSelector(
+    (aggregationData) => aggregationData.pages,
   )
   const postListViewMode = useAppConfigSelector(
     (appConfig) => appConfig.module?.posts?.mode,
@@ -40,13 +40,13 @@ export const HeaderDataConfigureProvider: Component = ({ children }) => {
   )
 
   useEffect(() => {
-    if (!pageMeta) return
+    if (!pages) return
     const nextMenuConfig = cloneHeaderMenuConfig(baseHeaderMenuConfig)
-    if (pageMeta) {
+    if (pages) {
       const homeIndex = nextMenuConfig.findIndex((item) => item.type === 'Home')
       if (homeIndex !== -1) {
         nextMenuConfig[homeIndex].subMenu = []
-        for (const page of pageMeta) {
+        for (const page of pages) {
           nextMenuConfig[homeIndex].subMenu!.push({
             path: `/${page.slug}`,
             title: page.title,
@@ -56,7 +56,7 @@ export const HeaderDataConfigureProvider: Component = ({ children }) => {
     }
 
     setHeaderMenuConfig(nextMenuConfig)
-  }, [pageMeta])
+  }, [pages])
 
   useEffect(() => {
     setHeaderMenuConfig((config) => {

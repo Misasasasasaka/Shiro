@@ -12,7 +12,10 @@ import { Link } from '~/i18n/navigation'
 import { noopArr } from '~/lib/noop'
 import { MarkdownImageRecordProvider } from '~/providers/article/MarkdownImageRecordProvider'
 import { useCurrentPageDataSelector } from '~/providers/page/CurrentPageDataProvider'
-import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
+import {
+  useAggregationSelector,
+  useCanComment,
+} from '~/providers/root/aggregation-data-provider'
 
 import FullPageLoading from '../loading'
 
@@ -60,24 +63,26 @@ export const PageTitle = () => {
   return (
     <>
       <h1 className="text-balance text-center lg:text-left">{title}</h1>
-      <GoToAdminEditingButton
-        id={id!}
-        type="pages"
-        className="absolute -top-6 right-0"
-      />
+      {id && (
+        <GoToAdminEditingButton
+          id={id}
+          type="pages"
+          className="absolute -top-6 right-0"
+        />
+      )}
     </>
   )
 }
 
 export const PagePaginator = () => {
   const t = useTranslations('note')
-  const currentPageTitle = useCurrentPageDataSelector((d) => d?.title)
-  const pageMeta = useAggregationSelector((d) => d.pageMeta)
-  const pages = useMemo(() => pageMeta || [], [pageMeta])
-  const indexInPages = pages.findIndex((i) => i.title === currentPageTitle)
+  const currentPageId = useCurrentPageDataSelector((d) => d?.id)
+  const pageList = useAggregationSelector((d) => d.pages)
+  const pages = useMemo(() => pageList || [], [pageList])
+  const indexInPages = pages.findIndex((page) => page.id === currentPageId)
   const n = pages.length
-  const hasNext = indexInPages + 1 < n
-  const hasPrev = indexInPages - 1 >= 0
+  const hasNext = indexInPages !== -1 && indexInPages + 1 < n
+  const hasPrev = indexInPages > 0
   return (
     <div
       className="relative mt-8 grid h-20 select-none grid-cols-2"
@@ -114,9 +119,10 @@ export const PagePaginator = () => {
 }
 
 export const MarkdownSelection: Component = (props) => {
-  const id = useCurrentPageDataSelector((data) => data?.id)!
-  const title = useCurrentPageDataSelector((data) => data?.title)!
-  const canComment = useCurrentPageDataSelector((data) => data?.allowComment)!
+  const id = useCurrentPageDataSelector((data) => data?.id)
+  const title = useCurrentPageDataSelector((data) => data?.title)
+  const canComment = useCanComment()
+  if (!id || !title) return props.children
   return (
     <WithArticleSelectionAction
       refId={id}
