@@ -10,15 +10,19 @@ import {
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1 hour
+
+interface SitemapEntry {
+  url: string
+  publishedAt?: string | null
+}
+
 export const GET = async () => {
   const queryClient = getQueryClient()
 
-  const { data } = await queryClient.fetchQuery({
+  const data = await queryClient.fetchQuery({
     queryKey: ['sitemap'],
-    queryFn: async () => {
-      const path = apiClient.aggregate.proxy.sitemap.toString(true)
-      return fetch(path).then((res) => res.json())
-    },
+    queryFn: async () =>
+      await apiClient.aggregate.proxy.sitemap.get<SitemapEntry[]>(),
   })
 
   const buildAlternateLinksForPostOrNote = (rawUrl: string) => {
@@ -59,10 +63,10 @@ export const GET = async () => {
   <?xml version="1.0" encoding="UTF-8"?>
   <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   ${data
-    .map((item: any) => {
+    .map((item) => {
       const loc = escapeXml(String(item.url ?? ''))
-      const lastmod = item.published_at
-        ? escapeXml(String(item.published_at))
+      const lastmod = item.publishedAt
+        ? escapeXml(String(item.publishedAt))
         : ''
       const alternates = item.url
         ? buildAlternateLinksForPostOrNote(String(item.url))

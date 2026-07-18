@@ -5,7 +5,7 @@
 >
 > 如果你正在寻找一个全新的个人博客前端，请关注 **[余白 / Yohaku](https://github.com/Innei/Yohaku)** — 一个独立的新项目，拥有全新的设计语言与视觉体系。完整代码需 [赞助](https://github.com/sponsors/Innei) 获取访问权限。
 >
-> **Shiro 要求 Mix Space Core 版本 == 10.x**，不兼容更高版本。
+> **Shiro 要求 Mix Space Core 13.x（已验证 13.14.1）、Node.js 22+，并使用 V3 API。**
 
 一个极简主义的个人网站主题，如纸的纯净，似雪的清新。
 
@@ -17,7 +17,6 @@
 
 - [静かな森](https://innei.in)
 - [可愛い松](https://blog.wibus.ren/)
-
 
 欢迎体验 Shiro 带来的极简之美！
 
@@ -50,6 +49,9 @@
 ## 📖 部署指南
 
 详细的部署教程请参考：https://mx-space.js.org/docs/themes/shiro/deploy
+
+Core 13 的环境变量、验证命令、部署和回滚说明见
+[Core 13 兼容与部署指南](docs/core13.md)。
 
 感谢 @wibus-wee、@wuhang2003 等社区贡献者编写的详细文档。
 
@@ -93,7 +95,7 @@ mkdir shiro && cd shiro
 wget https://raw.githubusercontent.com/Innei/Shiro/main/docker-compose.yml
 wget https://raw.githubusercontent.com/Innei/Shiro/main/.env.template .env
 
-vim .env # 配置环境变量
+vim .env     # 配置环境变量
 mkdir public # 放置自定义 Favicon
 docker compose up -d
 

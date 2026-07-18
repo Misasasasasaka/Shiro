@@ -1,59 +1,78 @@
-import type {
-  CollectionRefTypes,
-  CommentModel,
-  CommentThreadItem,
-  PaginateResult,
-} from '@mx-space/api-client'
-import type { InfiniteData } from '@tanstack/react-query'
+import { CollectionRefTypes } from '@mx-space/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { buildCommentTreeItem, mergeThreadRepliesIntoPages } from './thread'
+import {
+  buildCommentTreeItem,
+  type CommentThreadInfiniteData,
+  type CommentThreadRecord,
+  type CommentWithAnchor,
+  mergeThreadRepliesIntoPages,
+} from './thread'
 
 const makeComment = (
   id: string,
-  created: string,
-  overrides: Partial<CommentModel> = {},
-): CommentModel => ({
-  id,
-  created,
-  refType: 'posts' as CollectionRefTypes,
-  ref: 'post-id',
-  state: 1,
+  createdAt: string,
+  overrides: Partial<CommentWithAnchor> = {},
+): CommentWithAnchor => ({
+  agent: null,
+  anchor: null,
+  authProvider: null,
   author: `author-${id}`,
+  avatar: null,
+  createdAt,
+  deletedAt: null,
+  editedAt: null,
+  id,
+  ip: null,
+  isDeleted: false,
+  isWhispers: false,
+  latestReplyAt: null,
+  location: null,
+  parentCommentId: null,
+  pin: false,
+  readerId: null,
+  refId: 'post-id',
+  refType: CollectionRefTypes.Post,
+  replyCount: 0,
+  rootCommentId: null,
+  state: 1,
   text: `text-${id}`,
-  avatar: '',
+  url: null,
+  ...overrides,
+})
+
+const makeThread = (
+  replies: CommentWithAnchor[],
+  overrides: Partial<CommentThreadRecord> = {},
+): CommentThreadRecord => ({
+  ...makeComment('root', '2026-03-14T10:00:00.000Z'),
+  replies,
+  replyWindow: {
+    hasHidden: false,
+    hiddenCount: 0,
+    returned: replies.length,
+    threshold: 20,
+    total: replies.length,
+  },
   ...overrides,
 })
 
 describe('comment thread helpers', () => {
   it('rebuilds nested children from flat replies using parentCommentId', () => {
-    const root: CommentThreadItem = {
-      ...makeComment('root', '2026-03-14T10:00:00.000Z', {
-        parentCommentId: null,
-        rootCommentId: null,
+    const root = makeThread([
+      makeComment('child-2', '2026-03-14T10:03:00.000Z', {
+        parentCommentId: 'child-1',
+        rootCommentId: 'root',
       }),
-      replies: [
-        makeComment('child-2', '2026-03-14T10:03:00.000Z', {
-          parentCommentId: 'child-1',
-          rootCommentId: 'root',
-        }),
-        makeComment('child-1', '2026-03-14T10:01:00.000Z', {
-          parentCommentId: 'root',
-          rootCommentId: 'root',
-        }),
-        makeComment('orphan', '2026-03-14T10:02:00.000Z', {
-          parentCommentId: 'missing-parent',
-          rootCommentId: 'root',
-        }),
-      ],
-      replyWindow: {
-        total: 3,
-        returned: 3,
-        threshold: 20,
-        hasHidden: false,
-        hiddenCount: 0,
-      },
-    }
+      makeComment('child-1', '2026-03-14T10:01:00.000Z', {
+        parentCommentId: 'root',
+        rootCommentId: 'root',
+      }),
+      makeComment('orphan', '2026-03-14T10:02:00.000Z', {
+        parentCommentId: 'missing-parent',
+        rootCommentId: 'root',
+      }),
+    ])
 
     const tree = buildCommentTreeItem(root)
 
@@ -66,51 +85,40 @@ describe('comment thread helpers', () => {
     ])
   })
 
-  it('merges loaded middle replies back into paginated thread data', () => {
-    const root: CommentThreadItem & { ref: string } = {
-      ...makeComment('root', '2026-03-14T10:00:00.000Z', {
-        parentCommentId: null,
-        rootCommentId: null,
-      }),
-      ref: 'post-id',
-      replies: [
-        makeComment('child-1', '2026-03-14T10:01:00.000Z', {
-          parentCommentId: 'root',
-          rootCommentId: 'root',
-        }),
-        makeComment('child-3', '2026-03-14T10:03:00.000Z', {
-          parentCommentId: 'root',
-          rootCommentId: 'root',
-        }),
+  it('merges cursor-loaded replies back into thread pages', () => {
+    const root = makeThread(
+      [
+        makeComment('child-1', '2026-03-14T10:01:00.000Z'),
+        makeComment('child-3', '2026-03-14T10:03:00.000Z'),
       ],
-      replyWindow: {
-        total: 3,
-        returned: 2,
-        threshold: 20,
-        hasHidden: true,
-        hiddenCount: 1,
-        nextCursor: 'cursor-1',
+      {
+        replyWindow: {
+          hasHidden: true,
+          hiddenCount: 1,
+          nextCursor: 'cursor-1',
+          returned: 2,
+          threshold: 20,
+          total: 3,
+        },
       },
-    }
-
-    const data = {
+    )
+    const data: CommentThreadInfiniteData = {
       pageParams: [1],
       pages: [
         {
           data: [root],
           pagination: {
-            currentPage: 1,
-            totalPage: 1,
-            hasPrevPage: false,
             hasNextPage: false,
+            hasPrevPage: false,
+            page: 1,
             size: 10,
             total: 1,
+            totalPages: 1,
           },
+          readers: {},
         },
       ],
-    } satisfies InfiniteData<
-      PaginateResult<CommentThreadItem & { ref: string }>
-    >
+    }
 
     const next = mergeThreadRepliesIntoPages(data, {
       rootCommentId: 'root',
@@ -121,11 +129,11 @@ describe('comment thread helpers', () => {
         }),
       ],
       replyWindow: {
-        total: 3,
-        returned: 3,
-        threshold: 20,
         hasHidden: false,
         hiddenCount: 0,
+        returned: 3,
+        threshold: 20,
+        total: 3,
       },
     })
 
