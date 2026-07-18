@@ -26,17 +26,32 @@ export const ActivityRecent = () => {
   })
 
   const flatData = useMemo(
-    () =>
-      [...Object.entries(data || {})]
-        .flatMap(([type, items]) => {
-          if (!Array.isArray(items)) return []
-          return items.map((item: any) => ({ ...item, bizType: type }))
-        })
-        .sort(
-          (a, b) =>
-            new Date(b.created).getTime() - new Date(a.created).getTime(),
-        ) as ReactActivityType[],
-    // .slice(0, 6) as ReactActivityType[]
+    (): ReactActivityType[] =>
+      [
+        ...(data?.comment || []).map((item) => ({
+          ...item,
+          bizType: 'comment' as const,
+        })),
+        ...(data?.note || []).map((item) => ({
+          ...item,
+          bizType: 'note' as const,
+        })),
+        ...(data?.post || []).map((item) => ({
+          ...item,
+          bizType: 'post' as const,
+        })),
+        ...(data?.recent || []).map((item) => ({
+          ...item,
+          bizType: 'recent' as const,
+        })),
+        ...(data?.like || []).map((item) => ({
+          ...item,
+          bizType: 'like' as const,
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
     [data],
   )
 
@@ -79,7 +94,7 @@ export const ActivityRecent = () => {
           <ul className="shiro-timeline mt-4 flex flex-col pb-8 pl-2">
             {flatData.map((activity) => (
               <li
-                key={`${activity.bizType}-${activity.id}-${activity.created}`}
+                key={`${activity.bizType}-${activity.id}-${activity.createdAt}`}
                 className="flex min-w-0 justify-between"
               >
                 <ActivityCard activity={activity} />

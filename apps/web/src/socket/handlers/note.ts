@@ -17,10 +17,21 @@ import {
 import { EventTypes } from '~/types/events'
 
 import type { EventHandler } from './types'
-import { trackerRealtimeEvent, updateMessage } from './types'
+import {
+  getDeletedId,
+  hasStringId,
+  trackerRealtimeEvent,
+  updateMessage,
+} from './types'
+
+const isNoteEvent = (data: unknown): data is NoteModel =>
+  hasStringId(data) &&
+  typeof Reflect.get(data, 'title') === 'string' &&
+  typeof Reflect.get(data, 'nid') === 'number'
 
 export const noteCreateHandler: EventHandler = (data) => {
-  const { title, nid } = data as NoteModel
+  if (!isNoteEvent(data)) return
+  const { title, nid } = data
 
   toast.success(`有新的内容发布了：「${title}」`, {
     onClick: () => {
@@ -34,8 +45,9 @@ export const noteCreateHandler: EventHandler = (data) => {
 }
 
 export const noteUpdateHandler: EventHandler = (data) => {
-  const note = data as NoteModel
-  const currentData = getCurrentNoteData()?.data
+  if (!isNoteEvent(data)) return
+  const note = data
+  const currentData = getCurrentNoteData()
 
   if (!currentData) return
   if (currentData.id !== note.id) return
@@ -54,7 +66,7 @@ export const noteUpdateHandler: EventHandler = (data) => {
   }
 
   setCurrentNoteData((draft) => {
-    Object.assign(draft.data, note)
+    Object.assign(draft, note)
   })
   toast.info(updateMessage)
   trackerRealtimeEvent()
@@ -67,14 +79,8 @@ export const noteUpdateHandler: EventHandler = (data) => {
 }
 
 export const noteDeleteHandler: EventHandler = (data, { router }) => {
-  const note = data as NoteModel
-  if (
-    location.pathname ===
-      routeBuilder(Routes.Note, {
-        id: note.id,
-      }) &&
-    getCurrentNoteData()?.data.id === note.id
-  ) {
+  const id = getDeletedId(data)
+  if (id && getCurrentNoteData()?.id === id && router) {
     router.replace(routeBuilder(Routes.PageDeletd, {}))
     toast.error('手记已删除')
     trackerRealtimeEvent()

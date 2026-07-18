@@ -1,8 +1,10 @@
 import { RequestError } from '@mx-space/api-client'
 import type { FetchError } from 'ofetch'
 
-export const getErrorMessageFromRequestError = (error: RequestError) => {
-  if (!(error instanceof RequestError)) return (error as Error).message
+export const getErrorMessageFromRequestError = (error: unknown) => {
+  if (!(error instanceof RequestError)) {
+    return error instanceof Error ? error.message : String(error)
+  }
   const fetchError = error.raw as FetchError
   const messagesOrMessage = fetchError.response?._data?.message
   const bizMessage =

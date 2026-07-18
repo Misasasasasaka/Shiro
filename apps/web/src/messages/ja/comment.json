@@ -47,5 +47,6 @@
   "whisper_label": "ひそひそ話",
   "commented_on_block": "「{text}」にコメントしました",
   "from_location": "場所：{location}",
-  "avatar_alt": "{author}のアバター"
+  "avatar_alt": "{author}のアバター",
+  "anonymous": "匿名"
 }

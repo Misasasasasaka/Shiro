@@ -12,6 +12,7 @@ import { NothingFound } from '~/components/modules/shared/NothingFound'
 import { SearchFAB } from '~/components/modules/shared/SearchFAB'
 import { BackToTopFAB } from '~/components/ui/fab'
 import { OnlyDesktop } from '~/components/ui/viewport'
+import { normalizePostSortBy } from '~/lib/post-sort'
 import { apiClient } from '~/lib/request'
 import { definePrerenderPage } from '~/lib/request.server'
 
@@ -51,7 +52,7 @@ export default definePrerenderPage<Props>()({
     const preferredLang = lang === 'original' ? undefined : lang || locale
 
     return await apiClient.post.getList(currentPage, currentSize, {
-      sortBy: sortBy as any,
+      sortBy: normalizePostSortBy(sortBy),
       sortOrder: orderBy === 'desc' ? -1 : 1,
       truncate: 310,
       lang: preferredLang,

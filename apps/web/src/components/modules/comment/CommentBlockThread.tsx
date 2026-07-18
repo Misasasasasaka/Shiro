@@ -1,17 +1,16 @@
 'use client'
 
-import type { CommentModel } from '@mx-space/api-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef } from 'react'
 
 import { Avatar } from '~/components/ui/avatar'
 import { RelativeTime } from '~/components/ui/relative-time'
 import { ScrollArea } from '~/components/ui/scroll-area'
+import { buildCommentsQueryKey } from '~/queries/keys'
 
 import { CommentBoxRoot } from './CommentBox/Root'
+import type { CommentWithAnchor } from './thread'
 import type { CommentAnchor } from './types'
-
-type CommentWithAnchor = CommentModel & { anchor?: CommentAnchor }
 
 interface CommentBlockThreadProps {
   anchor: CommentAnchor
@@ -21,13 +20,14 @@ interface CommentBlockThreadProps {
 }
 
 function ThreadComment({ comment }: { comment: CommentWithAnchor }) {
-  const { avatar, author } = comment
+  const { avatar } = comment
+  const author = comment.author ?? 'Anonymous'
 
   return (
     <div className="flex gap-2 px-3 py-2">
       <Avatar
         className="shrink-0 rounded-full"
-        imageUrl={avatar}
+        imageUrl={avatar ?? undefined}
         radius="full"
         shadow={false}
         size={24}
@@ -39,7 +39,7 @@ function ThreadComment({ comment }: { comment: CommentWithAnchor }) {
             {author}
           </span>
           <span className="text-[11px] text-muted-foreground">
-            <RelativeTime date={comment.created} />
+            <RelativeTime date={comment.createdAt} />
           </span>
         </div>
         {comment.anchor?.mode === 'range' && (
@@ -77,6 +77,9 @@ export function CommentBlockThread({
   const handleAfterSubmit = useCallback(() => {
     queryClient.invalidateQueries({
       queryKey: ['comments', refId, 'anchors'],
+    })
+    queryClient.invalidateQueries({
+      queryKey: buildCommentsQueryKey(refId),
     })
     onClose?.()
   }, [queryClient, refId, onClose])

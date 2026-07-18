@@ -1,9 +1,10 @@
 'use client'
 
-import type { RecentlyModel } from '@mx-space/api-client'
+import type { RecentlyModel, RecentlyRefSummary } from '@mx-space/api-client'
 import {
   RecentlyAttitudeEnum,
   RecentlyAttitudeResultEnum,
+  RecentlyRefTypes,
 } from '@mx-space/api-client'
 import type { InfiniteData } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
@@ -29,7 +30,6 @@ import { sample } from '~/lib/lodash'
 import { apiClient } from '~/lib/request'
 import { routeBuilder, Routes } from '~/lib/route-builder'
 import { toast } from '~/lib/toast'
-import { urlBuilder } from '~/lib/url-builder'
 import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
 
 import { QUERY_KEY } from './constants'
@@ -109,8 +109,8 @@ export const ThinkingItem: FC<{
           </span>
 
           <span className="text-xs opacity-80 md:-translate-y-1 md:self-end">
-            <RelativeTime date={item.created} />
-            {item.modified && (
+            <RelativeTime date={item.createdAt} />
+            {item.modifiedAt && (
               <FloatPopover
                 mobileAsSheet
                 wrapperClassName="text-xs ml-1"
@@ -118,7 +118,7 @@ export const ThinkingItem: FC<{
                 type="tooltip"
                 triggerElement={t('edited')}
               >
-                {t('edited_at')} <RelativeTime date={item.modified} />
+                {t('edited_at')} <RelativeTime date={item.modifiedAt} />
               </FloatPopover>
             )}
           </span>
@@ -157,10 +157,7 @@ export const ThinkingItem: FC<{
               <i className="i-mingcute-comment-line" />
 
               <span className="sr-only">{t('comment')}</span>
-              <span>
-                {/* @ts-expect-error */}
-                {item.comments}
-              </span>
+              <span>{item.commentsIndex}</span>
             </button>
           )}
           <button
@@ -203,11 +200,25 @@ export const ThinkingItem: FC<{
 
 ThinkingItem.displayName = 'ThinkingItem'
 
-const RefPreview: FC<{ refModel: any }> = (props) => {
-  const t = useTranslations('common')
-  const title = props.refModel?.title
+const getRecentlyRefUrl = (ref: RecentlyRefSummary) => {
+  if (ref.url) return ref.url
+  switch (ref.type) {
+    case RecentlyRefTypes.Note:
+      return typeof ref.nid === 'number' ? `/notes/${ref.nid}` : '#'
+    case RecentlyRefTypes.Page:
+      return ref.slug ? `/${ref.slug}` : '#'
+    case RecentlyRefTypes.Recently:
+      return `/thinking/${ref.id}`
+    case RecentlyRefTypes.Post:
+      return '#'
+  }
+}
 
-  const url = useMemo(() => urlBuilder.build(props.refModel), [props.refModel])
+const RefPreview: FC<{ refModel: RecentlyRefSummary }> = (props) => {
+  const t = useTranslations('common')
+  const { title } = props.refModel
+
+  const url = useMemo(() => getRecentlyRefUrl(props.refModel), [props.refModel])
 
   if (!title) {
     return null

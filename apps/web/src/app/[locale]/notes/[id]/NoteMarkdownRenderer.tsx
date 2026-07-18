@@ -7,14 +7,18 @@ import { useCurrentNoteDataSelector } from '~/providers/note/CurrentNoteDataProv
 
 const MarkdownRenderers: Partial<MarkdownToJSX.PartialRules> = {
   [RuleType.text]: {
-    render(node: MarkdownToJSX.TextNode, _: any, state?: MarkdownToJSX.State) {
+    render(
+      node: MarkdownToJSX.TextNode,
+      _render: MarkdownToJSX.RuleOutput,
+      state?: MarkdownToJSX.State,
+    ) {
       return <span key={state?.key as React.Key}>{node.text}</span>
     },
   },
 }
 
 export const NoteMarkdownRenderer = () => {
-  const text = useCurrentNoteDataSelector((data) => data?.data.text)
+  const text = useCurrentNoteDataSelector((data) => data?.text)
   if (!text) return null
   return (
     <MainMarkdown

@@ -1,9 +1,9 @@
-version: '3'
-
 services:
   shiro:
     container_name: shiro
     image: innei/shiro:latest
+    env_file:
+      - .env
     volumes:
       - ./.env:/app/apps/web/.env
       - ./public:/app/apps/web/public

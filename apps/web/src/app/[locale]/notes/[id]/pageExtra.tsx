@@ -1,9 +1,6 @@
 'use client'
 
-import type {
-  Image,
-  NoteWrappedWithLikedAndTranslationPayload,
-} from '@mx-space/api-client'
+import type { Image } from '@mx-space/api-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
@@ -23,14 +20,15 @@ import {
   useCurrentNoteDataSelector,
   useSetCurrentNoteData,
 } from '~/providers/note/CurrentNoteDataProvider'
+import { useCanComment } from '~/providers/root/aggregation-data-provider'
 import { queries } from '~/queries/definition'
+import type { NoteDetail } from '~/types/content'
 
 export const MarkdownSelection: Component = (props) => {
-  const id = useCurrentNoteDataSelector((data) => data?.data?.id)!
-  const title = useCurrentNoteDataSelector((data) => data?.data?.title)!
-  const canComment = useCurrentNoteDataSelector(
-    (data) => data?.data.allowComment,
-  )!
+  const id = useCurrentNoteDataSelector((data) => data?.id)
+  const title = useCurrentNoteDataSelector((data) => data?.title)
+  const canComment = useCanComment()
+  if (!id || !title) return props.children
   return (
     <WithArticleSelectionAction
       refId={id}
@@ -43,8 +41,8 @@ export const MarkdownSelection: Component = (props) => {
 }
 
 export const NoteTitle = () => {
-  const title = useCurrentNoteDataSelector((data) => data?.data.title)
-  const id = useCurrentNoteDataSelector((data) => data?.data.id)
+  const title = useCurrentNoteDataSelector((data) => data?.title)
+  const id = useCurrentNoteDataSelector((data) => data?.id)
 
   if (!title) return null
   return (
@@ -53,17 +51,19 @@ export const NoteTitle = () => {
         {title}
       </h1>
 
-      <GoToAdminEditingButton
-        type="notes"
-        id={id!}
-        className="absolute right-0 top-0"
-      />
+      {id && (
+        <GoToAdminEditingButton
+          type="notes"
+          id={id}
+          className="absolute right-0 top-0"
+        />
+      )}
     </div>
   )
 }
 
 export const NoteDateMeta = () => {
-  const created = useCurrentNoteDataSelector((data) => data?.data.created)
+  const created = useCurrentNoteDataSelector((data) => data?.createdAt)
   const format = useFormatter()
 
   if (!created) return null
@@ -83,17 +83,17 @@ export const NoteDateMeta = () => {
 }
 export const NoteHeaderDate = withClientOnly(() => {
   const date = useCurrentNoteDataSelector((data) => ({
-    created: data?.data.created,
-    modified: data?.data.modified,
+    createdAt: data?.createdAt,
+    modifiedAt: data?.modifiedAt,
   }))
   const format = useFormatter()
   const t = useTranslations('common')
 
-  if (!date?.created) return null
+  if (!date?.createdAt) return null
 
-  const tips = date.modified
+  const tips = date.modifiedAt
     ? t('modified_at', {
-        date: format.dateTime(new Date(date.modified), {
+        date: format.dateTime(new Date(date.modifiedAt), {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -119,7 +119,7 @@ export const NoteHeaderDate = withClientOnly(() => {
 
 export const NoteMarkdownImageRecordProvider = (props: PropsWithChildren) => {
   const images = useCurrentNoteDataSelector(
-    (data) => data?.data.images || (noopArr as Image[]),
+    (data) => data?.images || (noopArr as Image[]),
   )!
 
   return (
@@ -149,8 +149,7 @@ export const NoteDataReValidate: FC<{ fetchedAt: string }> = withClientOnly(
     const locale = useLocale()
 
     const nid = useCurrentNoteDataSelector((note) => {
-      if (!note) return {}
-      return note.data.nid
+      return note?.nid
     })
     const onceRef = useRef(false)
     const queryClient = useQueryClient()
@@ -164,7 +163,7 @@ export const NoteDataReValidate: FC<{ fetchedAt: string }> = withClientOnly(
       queryClient
         .fetchQuery(queries.note.byNid(nid.toString(), null, locale))
         .then((data) => {
-          dataSetter(data as NoteWrappedWithLikedAndTranslationPayload)
+          dataSetter(data as NoteDetail)
           // toast.info('此文章访问的内容已过期，所以页面数据自动更新了。')
           logger.log('Note data revalidated', data)
         })

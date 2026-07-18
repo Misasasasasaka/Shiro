@@ -1,9 +1,10 @@
+import type { NoteModel, PostModel } from '@mx-space/api-client'
+
 import { EmitKeyMap } from '~/constants/keys'
-import type { NoteDto, PostDto } from '~/models/writing'
 
 export class WriteEditEvent extends Event {
   static readonly type = EmitKeyMap.EditDataUpdate
-  constructor(public readonly data: NoteDto | PostDto) {
+  constructor(public readonly data: NoteModel | PostModel) {
     super(EmitKeyMap.EditDataUpdate)
   }
 }

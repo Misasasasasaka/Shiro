@@ -1,6 +1,6 @@
 export interface AITranslation {
   id: string
-  created: string
+  createdAt: string
   hash: string
   refId: string
   refType: string

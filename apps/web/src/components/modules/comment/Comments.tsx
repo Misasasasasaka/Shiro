@@ -1,6 +1,5 @@
 'use client'
 
-import { BusinessEvents } from '@mx-space/webhook'
 import type { FC } from 'react'
 import { memo, useEffect } from 'react'
 
@@ -8,6 +7,7 @@ import { ErrorBoundary } from '~/components/common/ErrorBoundary'
 import { BottomToUpSoftScaleTransitionView } from '~/components/ui/transition'
 import { useTypeScriptHappyCallback } from '~/hooks/common/use-callback'
 import { WsEvent } from '~/socket/util'
+import { EventTypes } from '~/types/events'
 
 import { Comment } from './Comment'
 import { CommentBoxProvider } from './CommentBox/providers'
@@ -63,9 +63,9 @@ const CommentEventHandler = ({ refId }: { refId: string }) => {
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
 
-    const cleaner = WsEvent.on(BusinessEvents.COMMENT_CREATE, (data) => {
+    const cleaner = WsEvent.on(EventTypes.COMMENT_CREATE, (data) => {
       if (
-        data.ref === refId && // 如果标签页在后台
+        data.refId === refId && // 如果标签页在后台
         document.visibilityState === 'hidden'
       ) {
         document.title = `新评论！${currentTitle}`
@@ -78,7 +78,7 @@ const CommentEventHandler = ({ refId }: { refId: string }) => {
   }, [refId])
   const updateCommentUI = useUpdateComment()
   useEffect(() => {
-    const cleaner = WsEvent.on(BusinessEvents.COMMENT_UPDATE, (data) => {
+    const cleaner = WsEvent.on(EventTypes.COMMENT_UPDATE, (data) => {
       updateCommentUI({
         id: data.id,
         text: data.text,

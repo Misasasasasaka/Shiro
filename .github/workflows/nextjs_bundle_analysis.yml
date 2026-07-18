@@ -23,11 +23,11 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 22
 
       # If pnpm is used, you need to switch the previous step with the following one. pnpm does not create a package-lock.json
       # so the step above will fail to pull dependencies
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         name: Install pnpm
         id: pnpm-install
         with:
@@ -61,19 +61,21 @@ jobs:
           path: apps/web/.next/analyze/__bundle_analysis.json
 
       - name: Download base branch bundle stats
+        id: download-base-bundle
         uses: dawidd6/action-download-artifact@v9
         if: success() && github.event.number
+        continue-on-error: true
         with:
           workflow: nextjs_bundle_analysis.yml
           branch: ${{ github.event.pull_request.base.ref }}
           path: apps/web/.next/analyze/base
 
       - name: Compare with base branch bundle
-        if: success() && github.event.number
+        if: success() && github.event.number && steps.download-base-bundle.outcome == 'success'
         run: ls -laR apps/web/.next/analyze/base && npx -p nextjs-bundle-analysis compare
 
       - name: Upload analysis
-        if: success() && github.event.number
+        if: success() && github.event.number && steps.download-base-bundle.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: analysis_comment

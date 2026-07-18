@@ -1,14 +1,10 @@
 import './page.css'
 
-import type {
-  ModelWithLiked,
-  ModelWithTranslation,
-  NoteModel,
-} from '@mx-space/api-client'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
 import { AckRead } from '~/components/common/AckRead'
+import { ArticleRoomSubscriber } from '~/components/common/ArticleRoomSubscriber'
 import { ClientOnly } from '~/components/common/ClientOnly'
 import { CommentAreaRootLazy } from '~/components/modules/comment'
 import {
@@ -46,6 +42,8 @@ import {
 import { CurrentNoteNidProvider } from '~/providers/note/CurrentNoteIdProvider'
 import { LayoutRightSidePortal } from '~/providers/shared/LayoutRightSideProvider'
 import { WrappedElementProvider } from '~/providers/shared/WrappedElementProvider'
+import type { NoteDetail } from '~/types/content'
+import { contentMetaFor } from '~/types/content'
 
 import { Paper } from '../../../../components/layout/container/Paper'
 import { NoteHeadCover } from '../../../../components/modules/note/NoteHeadCover'
@@ -63,7 +61,7 @@ import {
 } from './pageExtra'
 import { Transition } from './Transition'
 
-type NoteWithTranslation = ModelWithLiked<ModelWithTranslation<NoteModel>>
+type NoteWithTranslation = NoteDetail
 
 export const dynamic = 'force-dynamic'
 
@@ -151,13 +149,13 @@ export const generateMetadata = async (props: {
       lang: searchParams.lang,
     })
 
-    const { data } = res
+    const data = res
     const description = getSummaryFromMd(data.text ?? '')
 
     const ogUrl = await getOgUrl(
       'note',
       {
-        nid: params.id,
+        nid: data.nid,
       },
       params.locale,
     )
@@ -167,9 +165,10 @@ export const generateMetadata = async (props: {
       params.locale as any,
       canonicalPathNoLocale,
     )
+    const translation = contentMetaFor(data).translation?.article
     const supportedLocales = getSupportedLocalesFromTranslations({
-      sourceLang: (data as any).translationMeta?.sourceLang,
-      availableTranslations: (data as any).availableTranslations,
+      sourceLang: translation?.sourceLang,
+      availableTranslations: translation?.availableTranslations,
     })
 
     return {
@@ -227,25 +226,23 @@ export default definePrerenderPage<NoteDetailPageParams>()<NoteDataResult>({
 
     return (
       <TocHeadingStrategyProvider
-        contentFormat={data.data.contentFormat}
-        hasContent={!!data.data.content}
+        contentFormat={data.contentFormat}
+        hasContent={!!data.content}
       >
         <CurrentNoteNidProvider nid={nid} />
         <CurrentNoteDataProvider data={data} />
+        <ArticleRoomSubscriber id={data.id} />
         <NoteDataReValidate fetchedAt={fetchedAt} />
         <SyncNoteDataAfterLoggedIn />
         <Transition className="min-w-0" lcpOptimization>
           <Paper key={nid} as={NoteMainContainer}>
             <PageInner
-              data={data.data}
+              data={data}
               privateLoginOnlyMessage={t('private_login_only')}
             />
           </Paper>
           <BottomToUpSoftScaleTransitionView delay={500}>
-            <CommentAreaRootLazy
-              refId={data.data.id}
-              allowComment={data.data.allowComment}
-            />
+            <CommentAreaRootLazy refId={data.id} />
           </BottomToUpSoftScaleTransitionView>
         </Transition>
 

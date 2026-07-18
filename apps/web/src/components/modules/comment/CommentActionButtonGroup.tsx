@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { m } from 'motion/react'
 import { useTranslations } from 'next-intl'
@@ -11,6 +11,7 @@ import { TiltedSendIcon } from '~/components/icons/TiltedSendIcon'
 import { AutoResizeHeight } from '~/components/modules/shared/AutoResizeHeight'
 import { TextArea } from '~/components/ui/input'
 import { apiClient } from '~/lib/request'
+import { buildCommentsQueryKey } from '~/queries/keys'
 
 import { CommentBoxRootLazy } from '.'
 import { CommentBoxHolderPortal } from './Comment'
@@ -28,6 +29,7 @@ export const CommentActionButtonGroup: FC<{
   const [replyFormOpen, setReplyFormOpen] = useState(false)
   const [editFormOpen, setEditFormOpen] = useState(false)
   const originalRefId = useCommentBoxRefIdValue()
+  const queryClient = useQueryClient()
   const onReplyCompleted = useCallback(() => {
     setReplyFormOpen(false)
   }, [])
@@ -40,7 +42,7 @@ export const CommentActionButtonGroup: FC<{
   )
   const createdAt = useCommentByIdSelector(
     commentId,
-    useCallback((comment) => comment?.created, []),
+    useCallback((comment) => comment?.createdAt, []),
   )
   const isDeleted = useCommentByIdSelector(
     commentId,
@@ -57,7 +59,17 @@ export const CommentActionButtonGroup: FC<{
   }, [createdAt, readerId, readerSession?.id])
 
   const canEdit = !isDeleted && (isOwner || canReaderEdit)
-  const isButtonGroup = canEdit
+  const updateCommentUI = useUpdateComment()
+  const { mutate: deleteComment } = useMutation({
+    mutationFn: () => apiClient.comment.proxy(commentId).delete(),
+    onSuccess: () => {
+      updateCommentUI({ id: commentId, isDeleted: true })
+      queryClient.invalidateQueries({
+        queryKey: buildCommentsQueryKey(originalRefId),
+      })
+    },
+  })
+  const isButtonGroup = canEdit || isOwner
   return (
     <div className="absolute bottom-0 right-0 flex min-h-0 translate-x-2/3 translate-y-1/4 items-center">
       {canEdit && (
@@ -85,6 +97,21 @@ export const CommentActionButtonGroup: FC<{
         <div className="pointer-events-none hidden h-full w-px shrink-0 select-none border-l border-neutral-4/50 text-transparent group-hover:inline-block">
           {'1'}
         </div>
+      )}
+      {isOwner && !isDeleted && (
+        <button
+          aria-label={tCommon('actions_delete')}
+          className={clsx(
+            'center box-content flex size-6 border border-x-0 border-neutral-200 bg-neutral-100 p-[2px] text-xs dark:border-neutral-700 dark:bg-neutral-800',
+            'invisible cursor-pointer opacity-0 group-[:hover]:visible group-[:hover]:opacity-70',
+          )}
+          type="button"
+          onClick={() => {
+            if (window.confirm(tCommon('actions_delete'))) deleteComment()
+          }}
+        >
+          <i className="i-mingcute-delete-2-line" />
+        </button>
       )}
       <button
         aria-label={tCommon('actions_reply')}

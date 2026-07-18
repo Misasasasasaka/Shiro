@@ -11,7 +11,7 @@ import {
   REQUEST_PATHNAME,
   REQUEST_QUERY,
 } from './constants/system'
-import { defaultLocale, locales } from './i18n/config'
+import { defaultLocale, type Locale, locales } from './i18n/config'
 import { routing } from './i18n/routing'
 
 const intlMiddleware = createIntlMiddleware(routing)
@@ -21,24 +21,27 @@ const NEXT_INTL_LOCALE_HEADER = 'X-NEXT-INTL-LOCALE'
 // Check if a string looks like a locale code (2-3 lowercase letters)
 const localePattern = /^[a-z]{2,3}$/
 
+const isLocale = (value: string): value is Locale =>
+  (locales as readonly string[]).includes(value)
+
 function isUnsupportedLocale(segment: string): boolean {
-  return localePattern.test(segment) && !locales.includes(segment as any)
+  return localePattern.test(segment) && !isLocale(segment)
 }
 
-function normalizeLocale(input?: string | null): string | undefined {
+function normalizeLocale(input?: string | null): Locale | undefined {
   if (!input) return undefined
   const locale = input.toLowerCase()
   const base = locale.split('-')[0]
-  if (base && locales.includes(base as any)) return base
+  if (base && isLocale(base)) return base
   return undefined
 }
 
-function getLocaleFromPathname(pathname: string): string | undefined {
+function getLocaleFromPathname(pathname: string): Locale | undefined {
   const firstSegment = pathname.split('/').find((segment) => segment.length > 0)
   return normalizeLocale(firstSegment)
 }
 
-function getLocaleFromRequest(req: NextRequest, pathname: string): string {
+function getLocaleFromRequest(req: NextRequest, pathname: string): Locale {
   return (
     getLocaleFromPathname(pathname) ||
     normalizeLocale(req.headers.get(NEXT_INTL_LOCALE_HEADER)) ||
@@ -63,7 +66,7 @@ function getLocaleFromRequest(req: NextRequest, pathname: string): string {
 
 function getLocaleFromIntlResponseHeaders(
   headers: Headers,
-): string | undefined {
+): Locale | undefined {
   // next-intl sets locale as a request header override, which Next.js serializes
   // to response headers using `x-middleware-request-*`.
   return (
@@ -77,6 +80,40 @@ function getLocaleFromIntlResponseHeaders(
     ) ||
     undefined
   )
+}
+
+const requestContextHeaders = [
+  REQUEST_PATHNAME,
+  REQUEST_QUERY,
+  REQUEST_GEO,
+  REQUEST_IP,
+  REQUEST_HOST,
+  REQUEST_LOCALE,
+] as const
+
+const applyRequestContextHeaders = (
+  response: NextResponse,
+  requestHeaders: Headers,
+) => {
+  const overriddenHeaders = new Set(
+    (response.headers.get('x-middleware-override-headers') || '')
+      .split(',')
+      .map((key) => key.trim())
+      .filter(Boolean),
+  )
+
+  for (const key of requestContextHeaders) {
+    response.headers.set(
+      `x-middleware-request-${key}`,
+      requestHeaders.get(key) || '',
+    )
+    overriddenHeaders.add(key)
+  }
+  response.headers.set(
+    'x-middleware-override-headers',
+    [...overriddenHeaders].join(','),
+  )
+  return response
 }
 
 const shouldSkipIntl = (pathname: string) => {
@@ -137,7 +174,11 @@ export async function proxy(req: NextRequest) {
     // Check for unsupported locale in path and redirect to default
     const segments = pathname.split('/').filter(Boolean)
     const firstSegment = segments[0]
-    if (firstSegment && isUnsupportedLocale(firstSegment)) {
+    if (
+      segments.length > 1 &&
+      firstSegment &&
+      isUnsupportedLocale(firstSegment)
+    ) {
       // Remove the unsupported locale prefix and redirect
       const newPathname = `/${segments.slice(1).join('/')}`
       const clonedUrl = req.nextUrl.clone()
@@ -147,13 +188,6 @@ export async function proxy(req: NextRequest) {
 
     const intlResponse = intlMiddleware(req)
 
-    // Copy headers from intl response
-    if (intlResponse.headers) {
-      intlResponse.headers.forEach((value, key) => {
-        requestHeaders.set(key, value)
-      })
-    }
-
     // Persist resolved locale for server-side fetching (e.g. as `x-lang`)
     requestHeaders.set(
       REQUEST_LOCALE,
@@ -161,31 +195,11 @@ export async function proxy(req: NextRequest) {
         getLocaleFromRequest(req, pathname),
     )
 
-    // Handle redirects
-    if (
-      intlResponse.status === 307 ||
-      intlResponse.status === 308 ||
-      intlResponse.headers.get('location')
-    ) {
-      return intlResponse
-    }
-
-    // Handle rewrites (for as-needed mode with default locale)
-    const rewriteHeader = intlResponse.headers.get('x-middleware-rewrite')
-    if (rewriteHeader) {
-      const rewriteUrl = new URL(rewriteHeader)
-      return NextResponse.rewrite(rewriteUrl, {
-        request: {
-          headers: requestHeaders,
-        },
-      })
-    }
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    })
+    // Preserve next-intl's original rewrite or redirect. Custom request context
+    // is forwarded using the middleware override protocol instead of copying
+    // response headers back into the request, which causes a default-locale
+    // redirect loop in `localePrefix: 'as-needed'` mode.
+    return applyRequestContextHeaders(intlResponse, requestHeaders)
   }
 
   // Routes that skip next-intl still benefit from having a stable locale header.

@@ -1,4 +1,4 @@
-import type { AggregateRoot } from '@mx-space/api-client'
+import type { AggregateRootWithTheme } from '@mx-space/api-client'
 import type { Metadata } from 'next'
 
 // import { captureException } from '@sentry/nextjs'
@@ -10,7 +10,7 @@ import { attachServerFetch } from './attach-fetch'
 export const defineMetadata = <T extends Record<string, string>>(
   fn: (
     params: T,
-    getAggregationData: () => Promise<AggregateRoot & { theme: any }>,
+    getAggregationData: () => Promise<AggregateRootWithTheme<AppThemeConfig>>,
   ) => Promise<Partial<Metadata>>,
 ) => {
   const handler = async ({ params }: { params: T }): Promise<Metadata> => {

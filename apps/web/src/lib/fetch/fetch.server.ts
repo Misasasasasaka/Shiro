@@ -17,20 +17,14 @@ export const $fetch = createFetch({
     async onRequest(context) {
       const cookie = await cookies()
 
-      // eslint-disable-next-line prefer-destructuring
-      let headers: any = context.options.headers
-      if (headers && headers instanceof Headers) {
-        headers = Object.fromEntries(headers.entries())
-      } else {
-        headers = {}
-      }
+      const headers = new Headers(context.options.headers)
 
       const cookieHeader = cookie
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
         .join('; ')
       if (cookieHeader) {
-        headers['cookie'] = cookieHeader
+        headers.set('cookie', cookieHeader)
         context.options.cache = 'no-store'
       }
 
@@ -50,12 +44,14 @@ export const $fetch = createFetch({
         get('cf-connecting-ip')
 
       if (ip) {
-        headers['x-real-ip'] = ip
-        headers['x-forwarded-for'] = ip
+        headers.set('x-real-ip', ip)
+        headers.set('x-forwarded-for', ip)
       }
 
-      headers['User-Agent'] =
-        `${ua} NextJS/v${PKG.dependencies.next} ${PKG.name}/${PKG.version}`
+      headers.set(
+        'User-Agent',
+        `${ua} NextJS/v${PKG.dependencies.next} ${PKG.name}/${PKG.version}`,
+      )
 
       // Add x-lang header from URL (more reliable than getLocale during RSC navigation)
       const referer = get('referer') || get('x-invoke-path')
@@ -65,7 +61,7 @@ export const $fetch = createFetch({
         console.log('locale extracted:', locale, 'from referer:', referer)
       }
 
-      headers['x-lang'] = locale
+      if (locale) headers.set('x-lang', locale)
 
       context.options.headers = headers
     },

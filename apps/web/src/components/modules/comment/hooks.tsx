@@ -4,6 +4,8 @@ import { useMemo } from 'react'
 import { apiClient } from '~/lib/request'
 import { buildCommentsQueryKey } from '~/queries/keys'
 
+import { normalizeCommentThreadPage } from './contract'
+
 export function useCommentsQuery(refId: string) {
   const key = useMemo(() => buildCommentsQueryKey(refId), [refId])
   const { data, isLoading, fetchNextPage, hasNextPage } = useInfiniteQuery({
@@ -11,11 +13,13 @@ export function useCommentsQuery(refId: string) {
     queryFn: async ({ queryKey, pageParam }) => {
       const page = pageParam
       const [, refId] = queryKey as [string, string]
-      const data = await apiClient.comment.getByRefId(refId, {
+      const response = await apiClient.comment.getByRefId(refId, {
         page,
+        size: 20,
+        sort: 'pinned',
       })
 
-      return data.$serialized
+      return normalizeCommentThreadPage(response, page, 20)
     },
 
     meta: {
@@ -23,10 +27,9 @@ export function useCommentsQuery(refId: string) {
     },
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasNextPage
-        ? lastPage.pagination.currentPage + 1
+        ? lastPage.pagination.page + 1
         : undefined,
-    getPreviousPageParam: (firstPage) => firstPage.pagination.currentPage - 1,
-    initialPageParam: 1 as number | undefined,
+    initialPageParam: 1,
   })
 
   return {

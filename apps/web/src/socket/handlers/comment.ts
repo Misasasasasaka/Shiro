@@ -1,6 +1,6 @@
-import type { CommentModel, PaginateResult } from '@mx-space/api-client'
 import type { InfiniteData } from '@tanstack/react-query'
 
+import type { CommentThreadPage } from '~/components/modules/comment/thread'
 import { queryClient } from '~/providers/root/react-query-provider'
 import { buildCommentsQueryKey } from '~/queries/keys'
 import { EventTypes } from '~/types/events'
@@ -8,25 +8,25 @@ import { EventTypes } from '~/types/events'
 import type { EventHandler } from './types'
 
 export const commentCreateHandler: EventHandler = (data) => {
-  const payload = data as {
-    ref: string
-    id: string
-  }
+  if (typeof data !== 'object' || data === null) return
+  const refId = Reflect.get(data, 'refId')
+  const id = Reflect.get(data, 'id')
+  if (typeof refId !== 'string' || typeof id !== 'string') return
 
   setTimeout(() => {
-    const queryData = queryClient.getQueryData<
-      InfiniteData<PaginateResult<CommentModel>>
-    >(buildCommentsQueryKey(payload.ref))
+    const queryData = queryClient.getQueryData<InfiniteData<CommentThreadPage>>(
+      buildCommentsQueryKey(refId),
+    )
 
     if (!queryData) return
     for (const page of queryData.pages) {
-      if (page.data.some((comment) => comment.id === payload.id)) {
+      if (page.data.some((comment) => comment.id === id)) {
         return
       }
     }
 
     queryClient.invalidateQueries({
-      queryKey: buildCommentsQueryKey(payload.ref),
+      queryKey: buildCommentsQueryKey(refId),
     })
   }, 1000)
 }

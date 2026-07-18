@@ -27,7 +27,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Blurhash } from 'react-blurhash'
 import { tv } from 'tailwind-variants'
 
 import { useIsMobile } from '~/atoms/hooks/viewport'
@@ -39,6 +38,7 @@ import { calculateDimensions } from '~/lib/image'
 import { useMarkdownImageRecord } from '~/providers/article/MarkdownImageRecordProvider'
 
 import { Divider } from '../divider'
+import { ThumbhashPlaceholder } from './ThumbhashPlaceholder'
 
 const MobilePhotoView = lazy(() =>
   import('./MobilePhotoView').then((mod) => ({ default: mod.MobilePhotoView })),
@@ -463,14 +463,10 @@ const Placeholder: FC<
         backgroundColor: accentColor,
       }}
     >
-      {imageMeta?.blurHash && (
-        <Blurhash
-          resolutionX={32}
-          resolutionY={32}
-          punch={1}
-          height={scaledSize.scaleHeight}
-          width={scaledSize.scaleWidth}
-          hash={imageMeta.blurHash}
+      {imageMeta?.thumbhash && (
+        <ThumbhashPlaceholder
+          thumbhash={imageMeta.thumbhash}
+          className="absolute inset-0 size-full rounded-xl object-cover"
         />
       )}
     </span>

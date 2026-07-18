@@ -21,6 +21,7 @@ import {
   useCurrentNoteDataSelector,
 } from '~/providers/note/CurrentNoteDataProvider'
 import { useCurrentNoteNid } from '~/providers/note/CurrentNoteIdProvider'
+import { useCanComment } from '~/providers/root/aggregation-data-provider'
 import { useIsEoFWrappedElement } from '~/providers/shared/WrappedElementProvider'
 
 import {
@@ -60,15 +61,12 @@ export const NoteActionAside: Component = ({ className }) => (
 )
 
 const NoteAsideCommentButton = () => {
-  const { title, id, allowComment } =
-    useCurrentNoteDataSelector((_data) => {
-      const { data } = _data || {}
-      return {
-        title: data?.title,
-        id: data?.id,
-        allowComment: data?.allowComment,
-      }
-    }) || {}
+  const { title, id } =
+    useCurrentNoteDataSelector((data) => ({
+      title: data?.title,
+      id: data?.id,
+    })) || {}
+  const allowComment = useCanComment()
 
   const isEoF = useIsEoFWrappedElement()
   if (!id) return null
@@ -82,8 +80,8 @@ const LikeButton = () => {
   const control = useAnimationControls()
   const [update] = useForceUpdate()
 
-  const likeCount = useCurrentNoteDataSelector((data) => data?.data.count.like)
-  const id = useCurrentNoteDataSelector((data) => data?.data.id)
+  const likeCount = useCurrentNoteDataSelector((data) => data?.likeCount)
+  const id = useCurrentNoteDataSelector((data) => data?.id)
   const nid = useCurrentNoteNid()
 
   if (!id) return null
@@ -94,7 +92,7 @@ const LikeButton = () => {
     apiClient.activity.likeIt('Note', id).then(() => {
       setLikeId(id)
       setCurrentNoteData((draft) => {
-        draft.data.count.like += 1
+        draft.likeCount += 1
       })
       update()
     })
@@ -176,7 +174,7 @@ const ShareButton = () => {
       aria-label={t('aria_share_note')}
       className="flex flex-col space-y-2"
       onClick={() => {
-        const note = getCurrentNoteData()?.data
+        const note = getCurrentNoteData()
 
         if (!note) return
 

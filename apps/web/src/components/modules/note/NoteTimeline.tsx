@@ -28,13 +28,13 @@ const animateUl: TargetAndTransition = {
 const NoteTimelineImpl = () => {
   const locale = useLocale()
   const note = useCurrentNoteDataSelector((data) => {
-    const note = data?.data
+    const note = data
     if (!note) return null
     return {
       id: note.id,
       nid: note.nid,
       title: note.title,
-      created: note.created,
+      createdAt: note.createdAt,
       isPublished: note.isPublished,
     }
   })
@@ -65,7 +65,7 @@ const NoteTimelineImpl = () => {
           title: note.title,
           nid: note.nid,
           id: note.id,
-          created: note.created,
+          createdAt: note.createdAt,
           isPublished: note.isPublished,
         },
       ]

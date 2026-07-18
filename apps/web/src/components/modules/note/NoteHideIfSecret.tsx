@@ -12,10 +12,13 @@ export const NoteHideIfSecret: Component = ({ children }) => {
   const t = useTranslations('note')
   const tCommon = useTranslations('common')
   const locale = useLocale()
-  const noteSecret = useCurrentNoteDataSelector((data) => data?.data.publicAt)
+  const noteSecret = useCurrentNoteDataSelector((data) => data?.publicAt)
 
-  const noteId = useCurrentNoteDataSelector((data) => data?.data.nid)
-  const secretDate = useMemo(() => new Date(noteSecret!), [noteSecret])
+  const noteId = useCurrentNoteDataSelector((data) => data?.nid)
+  const secretDate = useMemo(
+    () => (noteSecret ? new Date(noteSecret) : null),
+    [noteSecret],
+  )
   const isSecret = noteSecret
     ? isAfter(new Date(noteSecret), new Date())
     : false
@@ -25,6 +28,7 @@ export const NoteHideIfSecret: Component = ({ children }) => {
   useEffect(() => {
     if (!noteId) return
     let timer: any
+    if (!secretDate) return
     const timeout = +secretDate - Date.now()
     // https://stackoverflow.com/questions/3468607/why-does-settimeout-break-for-large-millisecond-delay-values
     const MAX_TIMEOUT = (2 ^ 31) - 1

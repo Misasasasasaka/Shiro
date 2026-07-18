@@ -1,4 +1,3 @@
-import type { CommentModel } from '@mx-space/api-client'
 import { useQueryClient } from '@tanstack/react-query'
 import type { SVGProps } from 'react'
 
@@ -9,7 +8,11 @@ import { PinIconToggle } from '../shared/PinIconToggle'
 import { useCommentBoxRefIdValue } from './CommentBox/hooks'
 import { useUpdateComment } from './CommentProvider'
 
-export const CommentPinButton = ({ comment }: { comment: CommentModel }) => {
+export const CommentPinButton = ({
+  comment,
+}: {
+  comment: { id: string; parentCommentId: string | null; pin: boolean }
+}) => {
   const updateCommentUI = useUpdateComment()
   const queryClient = useQueryClient()
   const refId = useCommentBoxRefIdValue()

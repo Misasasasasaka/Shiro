@@ -1,6 +1,7 @@
 'use client'
 
 import { useCurrentPageDataSelector } from '~/providers/page/CurrentPageDataProvider'
+import { useCanComment } from '~/providers/root/aggregation-data-provider'
 
 import { ActionAsideContainer } from '../shared/ActionAsideContainer'
 import { AsideCommentButton } from '../shared/AsideCommentButton'
@@ -14,12 +15,12 @@ export const PageActionAside: Component = ({ className }) => (
 )
 
 const PageAsideCommentButton = () => {
-  const { title, id, allowComment } =
+  const { title, id } =
     useCurrentPageDataSelector((data) => ({
       title: data?.title,
       id: data?.id,
-      allowComment: data?.allowComment,
     })) || {}
-  if (!id || !allowComment) return null
-  return <AsideCommentButton refId={id} title={title!} />
+  const allowComment = useCanComment()
+  if (!id || !allowComment || !title) return null
+  return <AsideCommentButton refId={id} title={title} />
 }

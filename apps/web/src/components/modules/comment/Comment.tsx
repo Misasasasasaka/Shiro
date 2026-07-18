@@ -1,6 +1,5 @@
 import './Comment.css'
 
-import type { CommentModel } from '@mx-space/api-client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { atom, useAtomValue } from 'jotai'
@@ -44,12 +43,12 @@ import {
   useCommentMarkdownContainerRef,
   useCommentReader,
 } from './CommentProvider'
+import { normalizeThreadReplies } from './contract'
 import {
   type CommentThreadInfiniteData,
   type CommentThreadViewItem,
   mergeThreadRepliesIntoPages,
 } from './thread'
-import type { CommentAnchor } from './types'
 
 export const Comment: Component<{
   commentId: string
@@ -78,7 +77,7 @@ const CommentRender: Component<{
 
     return isSingleLine && isURL
   }, [comment.text])
-  const reader = useCommentReader(comment.readerId)
+  const reader = useCommentReader(comment.readerId ?? undefined)
 
   const {
     id: cid,
@@ -87,21 +86,21 @@ const CommentRender: Component<{
     location,
     isWhispers,
     url,
-    source,
+    authProvider,
   } = comment
 
   const avatar = reader?.image || comment.avatar
-  const author = reader?.name || comment.author
+  const author = reader?.name || comment.author || t('anonymous')
   const parentId = comment.parentCommentId ?? null
   const displayText = comment.isDeleted ? t('deleted_placeholder') : text
 
   const authorUrl = useMemo(() => {
     if (url) return url
-    if (source === 'github' && reader?.handle) {
+    if (authProvider === 'github' && reader?.handle) {
       return `https://github.com/${reader.handle}`
     }
     return null
-  }, [url, source, reader?.handle])
+  }, [url, authProvider, reader?.handle])
 
   const authorElement = authorUrl ? (
     <a
@@ -116,7 +115,7 @@ const CommentRender: Component<{
     <span className="max-w-full shrink-0 break-all">{author}</span>
   )
 
-  const { anchor } = comment as CommentModel & { anchor?: CommentAnchor }
+  const { anchor } = comment
 
   const CommentNormalContent = (
     <div
@@ -141,6 +140,17 @@ const CommentRender: Component<{
               text: `${anchor.snapshotText.slice(0, 40)}${anchor.snapshotText.length > 40 ? '…' : ''}`,
             })}
           </span>
+        </div>
+      )}
+      {comment.parent && (
+        <div className="mb-1.5 border-l-2 border-neutral-300 pl-2 text-xs text-neutral-500 dark:border-neutral-700">
+          <span className="font-medium">
+            {comment.parent.author || t('anonymous')}
+          </span>
+          {': '}
+          {comment.parent.isDeleted
+            ? t('deleted_placeholder')
+            : comment.parent.text.slice(0, 80)}
         </div>
       )}
       <CommentMarkdownContainerRefContext>
@@ -186,15 +196,17 @@ const CommentRender: Component<{
               <Avatar
                 alt={t('avatar_alt', { author })}
                 className="size-6 select-none rounded-full bg-neutral-200 ring-2 ring-neutral-200 dark:bg-neutral-800 dark:ring-neutral-800 md:size-9"
-                imageUrl={avatar}
+                imageUrl={avatar ?? undefined}
                 shadow={false}
               />
-              {source &&
-                !!getStrategyIconComponent(source as AuthSocialProviders) && (
+              {authProvider &&
+                !!getStrategyIconComponent(
+                  authProvider as AuthSocialProviders,
+                ) && (
                   <div className="center absolute -right-1.5 bottom-1 flex size-3.5 rounded-full bg-neutral-50 ring-[1.5px] ring-neutral-200 dark:bg-neutral-800 dark:ring-neutral-950">
                     <UserAuthStrategyIcon
                       className="size-3"
-                      strategy={source as AuthSocialProviders}
+                      strategy={authProvider as AuthSocialProviders}
                     />
                   </div>
                 )}
@@ -218,7 +230,7 @@ const CommentRender: Component<{
                   {authorElement}
                   <span className="-mt-1 flex min-w-0 shrink select-none flex-wrap items-center space-x-2 md:mt-0 md:self-end">
                     <span className="inline-flex shrink-0 text-[0.71rem] font-medium opacity-40">
-                      <RelativeTime date={comment.created} />
+                      <RelativeTime date={comment.createdAt} />
                     </span>
                     {!!location && (
                       <span className="min-w-0 max-w-full truncate break-all text-[0.71rem] opacity-35">
@@ -288,7 +300,8 @@ const LoadMoreRepliesButton: FC<{
         size: 10,
       })
     },
-    onSuccess: (result) => {
+    onSuccess: (response) => {
+      const result = normalizeThreadReplies(response)
       const replyWindow = {
         total:
           comment.replyWindow?.total ??

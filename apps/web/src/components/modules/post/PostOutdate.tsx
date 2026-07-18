@@ -9,7 +9,7 @@ import { useCurrentPostDataSelector } from '~/providers/post/CurrentPostDataProv
 
 export const PostOutdate = () => {
   const t = useTranslations('post')
-  const time = useCurrentPostDataSelector((s) => s?.modified)
+  const time = useCurrentPostDataSelector((post) => post?.modifiedAt)
   if (!time) {
     return null
   }

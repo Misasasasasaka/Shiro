@@ -47,5 +47,6 @@
   "whisper_label": "Whisper",
   "commented_on_block": "Commented on「{text}」",
   "from_location": "From: {location}",
-  "avatar_alt": "{author}'s avatar"
+  "avatar_alt": "{author}'s avatar",
+  "anonymous": "Anonymous"
 }

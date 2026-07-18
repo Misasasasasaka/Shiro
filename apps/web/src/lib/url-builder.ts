@@ -1,9 +1,4 @@
-import type {
-  CategoryModel,
-  NoteModel,
-  PageModel,
-  PostModel,
-} from '@mx-space/api-client'
+import type { NoteModel, PageModel, PostModel } from '@mx-space/api-client'
 
 import { isDev } from '~/lib/env'
 import { getAggregationData } from '~/providers/root/aggregation-data-provider'
@@ -13,20 +8,31 @@ export function urlBuilder(path = '') {
   return new URL(path, getAggregationData()?.url.webUrl)
 }
 
-export function isPostModel(model: any): model is PostModel {
+const property = (model: unknown, key: string) => {
+  if (typeof model !== 'object' || model === null) return
+  return Reflect.get(model, key)
+}
+
+export function isPostModel(model: unknown): model is PostModel {
   return (
-    isDefined(model.title) && isDefined(model.slug) && !isDefined(model.order)
+    isDefined(property(model, 'title')) &&
+    isDefined(property(model, 'slug')) &&
+    isDefined(property(model, 'categoryId'))
   )
 }
 
-export function isPageModel(model: any): model is PageModel {
+export function isPageModel(model: unknown): model is PageModel {
   return (
-    isDefined(model.title) && isDefined(model.slug) && isDefined(model.order)
+    isDefined(property(model, 'title')) &&
+    isDefined(property(model, 'slug')) &&
+    isDefined(property(model, 'order'))
   )
 }
 
-export function isNoteModel(model: any): model is NoteModel {
-  return isDefined(model.title) && isDefined(model.nid)
+export function isNoteModel(model: unknown): model is NoteModel {
+  return (
+    isDefined(property(model, 'title')) && isDefined(property(model, 'nid'))
+  )
 }
 
 function buildUrl(model: PostModel | NoteModel | PageModel) {
@@ -36,9 +42,7 @@ function buildUrl(model: PostModel | NoteModel | PageModel) {
       console.error('PostModel.category is missing!!!!!')
       return '#'
     }
-    return `/posts/${
-      (model.category as CategoryModel).slug
-    }/${encodeURIComponent(model.slug)}`
+    return `/posts/${model.category.slug}/${encodeURIComponent(model.slug)}`
   } else if (isPageModel(model)) {
     return `/${model.slug}`
   } else if (isNoteModel(model)) {
@@ -48,7 +52,7 @@ function buildUrl(model: PostModel | NoteModel | PageModel) {
   return '/'
 }
 
-function isDefined(data: any) {
+function isDefined(data: unknown) {
   return data !== undefined && data !== null
 }
 

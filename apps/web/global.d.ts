@@ -7,11 +7,9 @@ declare global {
     reset(): void
     error: Error
   }
-  export type NextPageParams<P extends {}, Props = {}> = PropsWithChildren<
-    {
-      params: Promise<P>
-    } & Props
-  >
+  export type NextPageParams<P extends {}, Props = {}> = {
+    params: Promise<P>
+  } & Props
 
   export type LocaleParams = {
     locale: string

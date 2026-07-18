@@ -14,7 +14,7 @@ const bannerClassNames = {
 }
 
 const useNoteBanner = () => {
-  const meta = useCurrentNoteDataSelector((n) => n?.data.meta)
+  const meta = useCurrentNoteDataSelector((note) => note?.meta)
 
   let banner = meta?.banner as {
     type: keyof typeof bannerClassNames

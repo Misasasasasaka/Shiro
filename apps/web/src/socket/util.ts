@@ -17,8 +17,14 @@ export class WsEvent extends Event {
       data: EventPayloadMapping[Extract<T, keyof EventPayloadMapping>],
     ) => void,
   ) {
-    const _cb = (e: any) => {
-      cb(e.data)
+    const _cb = (event: Event) => {
+      if (!(event instanceof WsEvent)) return
+      cb(
+        event.data as EventPayloadMapping[Extract<
+          T,
+          keyof EventPayloadMapping
+        >],
+      )
     }
     document.addEventListener(buildSocketEventType(type), _cb)
 

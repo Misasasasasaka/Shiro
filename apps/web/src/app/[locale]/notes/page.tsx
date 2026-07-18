@@ -1,4 +1,3 @@
-import type { NoteWrappedWithLikedPayload } from '@mx-space/api-client'
 import { notFound } from 'next/navigation'
 
 import type { Locale } from '~/i18n/config'
@@ -8,10 +7,7 @@ import { definePrerenderPage } from '~/lib/request.server'
 
 export default definePrerenderPage<{ locale: Locale }>()({
   async fetcher() {
-    const latest =
-      await apiClient.note.proxy.latest.get<NoteWrappedWithLikedPayload>()
-
-    return latest?.data
+    return (await apiClient.note.getLatest()).$serialized
   },
   Component: async ({ data: nullableData, params }) => {
     if (!nullableData || !nullableData.isPublished) {
