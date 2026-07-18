@@ -34,9 +34,6 @@ let nextConfig = {
   productionBrowserSourceMaps: false,
   output: 'standalone',
   assetPrefix: isProd ? env.ASSETPREFIX || undefined : undefined,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   compiler: {
     // reactRemoveProperties: { properties: ['^data-id$', '^data-(\\w+)-id$'] },
   },
@@ -44,7 +41,6 @@ let nextConfig = {
     serverMinification: true,
     webpackBuildWorker: true,
     globalNotFound: true,
-    turbopackImportTypeText: true,
 
     // optimizePackageImports: ['dayjs'],
   },

@@ -1,6 +1,7 @@
-FROM node:lts-alpine AS base
+FROM node:22-alpine AS base
 
 RUN npm install -g --arch=x64 --platform=linux sharp
+RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
 
 FROM base AS deps
 
@@ -11,40 +12,21 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install -g pnpm
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 
-RUN apk update && apk add --no-cache git
+RUN apk add --no-cache git
 
 WORKDIR /app
 COPY --from=deps /app/ .
 
-# Reuse pnpm installed in deps stage to avoid network flakiness
-COPY --from=deps /usr/local/lib/node_modules/pnpm /usr/local/lib/node_modules/pnpm
-RUN ln -sf ../lib/node_modules/pnpm/bin/pnpm.cjs /usr/local/bin/pnpm \
-  && ln -sf ../lib/node_modules/pnpm/bin/pnpx.cjs /usr/local/bin/pnpx
-
 ENV NODE_ENV=production
 ARG BASE_URL
 
-# Build-time secrets - ensure these are passed securely during docker build
-# and not committed to version control
-ARG S3_ACCESS_KEY
-ARG S3_SECRET_KEY
-ARG WEBHOOK_SECRET
-ARG TMDB_API_KEY
-ARG GH_TOKEN
 ENV BASE_URL=${BASE_URL}
-ENV NEXT_PUBLIC_API_URL=${BASE_URL}/api/v2
+ENV NEXT_PUBLIC_API_URL=${BASE_URL}/api/v3
 ENV NEXT_PUBLIC_GATEWAY_URL=${BASE_URL}
-
-ENV S3_ACCESS_KEY=${S3_ACCESS_KEY}
-ENV S3_SECRET_KEY=${S3_SECRET_KEY}
-ENV TMDB_API_KEY=${TMDB_API_KEY}
-ENV WEBHOOK_SECRET=${WEBHOOK_SECRET}
-ENV GH_TOKEN=${GH_TOKEN}
 
 RUN pnpm turbo run build --filter=@shiro/web
 
@@ -54,20 +36,20 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install fonts for proper text rendering
-RUN apk add --no-cache fontconfig wget curl
+RUN apk add --no-cache curl fontconfig unzip wget
 RUN mkdir -p /usr/share/fonts/truetype/chinese /usr/share/fonts/truetype/english
 
 # Install Chinese fonts
 RUN wget -O /usr/share/fonts/truetype/LXGWWenKai-Regular.ttf \
-    https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Regular.ttf
+  https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Regular.ttf
 RUN wget -O /usr/share/fonts/truetype/LXGWWenKai-Medium.ttf \
-    https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Medium.ttf
+  https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Medium.ttf
 RUN wget -O /usr/share/fonts/truetype/LXGWWenKai-Light.ttf \
-    https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Light.ttf
+  https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Light.ttf
 
 # Install English font Geist
 RUN wget -O /tmp/geist.zip \
-    https://github.com/vercel/geist-font/releases/download/1.5.0/geist-font-1.5.0.zip 
+  https://github.com/vercel/geist-font/releases/download/1.5.0/geist-font-1.5.0.zip
 RUN unzip /tmp/geist.zip -d /tmp/geist
 RUN find /tmp/geist -name "*.ttf" -exec cp {} /usr/share/fonts/truetype/ \;
 RUN rm -rf /tmp/geist.zip /tmp/geist

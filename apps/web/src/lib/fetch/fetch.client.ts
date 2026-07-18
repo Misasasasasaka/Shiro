@@ -12,8 +12,9 @@ const isServerSide = typeof window === 'undefined'
 const uuidStorageKey = 'x-uuid'
 const uuid = nanoid()
 
-const globalConfigureHeader = {} as any
-const globalConfigureSearchParams = {} as any
+const globalConfigureHeader: Record<string, string> = {}
+const globalConfigureSearchParams: Record<string, boolean | number | string> =
+  {}
 
 if (isServerSide) {
   globalConfigureHeader['User-Agent'] =
@@ -26,16 +27,11 @@ export const $fetch = createFetch({
     credentials: 'include',
     headers: globalConfigureHeader,
     onRequest(context) {
-      // eslint-disable-next-line prefer-destructuring
-      let headers: any = context.options.headers
-      if (headers && headers instanceof Headers) {
-        headers = Object.fromEntries(headers.entries())
-      } else {
-        headers = {}
-      }
-
-      headers['X-Session-Uuid'] =
-        globalThis?.sessionStorage?.getItem(uuidStorageKey) ?? uuid
+      const headers = new Headers(context.options.headers)
+      headers.set(
+        'X-Session-Uuid',
+        globalThis?.sessionStorage?.getItem(uuidStorageKey) ?? uuid,
+      )
 
       context.options.params ??= {}
       Object.assign(context.options.params, globalConfigureSearchParams)
@@ -72,7 +68,9 @@ export const attachFetchHeader = (key: string, value: string | null) => {
   }
 }
 
-export const setGlobalSearchParams = (params: Record<string, any>) => {
+export const setGlobalSearchParams = (
+  params: Record<string, boolean | number | string>,
+) => {
   clearGlobalSearchParams()
   Object.assign(globalConfigureSearchParams, params)
 }
