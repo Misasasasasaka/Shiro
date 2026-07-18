@@ -17,10 +17,22 @@ import {
 import { EventTypes } from '~/types/events'
 
 import type { EventHandler } from './types'
-import { trackerRealtimeEvent, updateMessage } from './types'
+import {
+  getDeletedId,
+  hasStringId,
+  trackerRealtimeEvent,
+  updateMessage,
+} from './types'
+
+const isPostEvent = (data: unknown): data is PostModel =>
+  hasStringId(data) &&
+  typeof Reflect.get(data, 'title') === 'string' &&
+  typeof Reflect.get(data, 'slug') === 'string' &&
+  typeof Reflect.get(data, 'category') === 'object'
 
 export const postCreateHandler: EventHandler = (data) => {
-  const { title, category, slug } = data as PostModel
+  if (!isPostEvent(data)) return
+  const { title, category, slug } = data
   toast.success(`有新的内容发布了：「${title}」`, {
     onClick: () => {
       window.peek(`/posts/${category.slug}/${slug}`)
@@ -32,7 +44,8 @@ export const postCreateHandler: EventHandler = (data) => {
 }
 
 export const postUpdateHandler: EventHandler = (data) => {
-  const post = data as PostModel
+  if (!isPostEvent(data)) return
+  const post = data
   const currentData = getGlobalCurrentPostData()
 
   if (!currentData) return
@@ -52,9 +65,7 @@ export const postUpdateHandler: EventHandler = (data) => {
   }
 
   setGlobalCurrentPostData((draft) => {
-    const nextPost = { ...data }
-    Reflect.deleteProperty(nextPost, 'category')
-    Object.assign(draft, nextPost)
+    Object.assign(draft, post)
   })
   toast.info(updateMessage)
   trackerRealtimeEvent()
@@ -67,15 +78,8 @@ export const postUpdateHandler: EventHandler = (data) => {
 }
 
 export const postDeleteHandler: EventHandler = (data, { router }) => {
-  const post = data as PostModel
-  if (
-    location.pathname ===
-      routeBuilder(Routes.Post, {
-        category: post.category.slug,
-        slug: post.slug,
-      }) &&
-    getGlobalCurrentPostData()?.id === post.id
-  ) {
+  const id = getDeletedId(data)
+  if (id && getGlobalCurrentPostData()?.id === id && router) {
     router.replace(routeBuilder(Routes.PageDeletd, {}))
     toast.error('文章已删除')
     trackerRealtimeEvent()

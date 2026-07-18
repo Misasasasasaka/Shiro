@@ -11,24 +11,27 @@ import { EventTypes } from '~/types/events'
 import type { EventHandler } from './types'
 
 export const articleReadCountUpdateHandler: EventHandler = (data) => {
-  const { id, count, type } = data
-  if (!count) return
+  if (typeof data !== 'object' || data === null) return
+  const id = Reflect.get(data, 'id')
+  const count = Reflect.get(data, 'count')
+  const type = Reflect.get(data, 'type')
+  if (typeof id !== 'string' || typeof count !== 'number') return
 
   switch (type) {
     case 'post': {
       const currentData = getGlobalCurrentPostData()
       if (currentData?.id === id) {
         setGlobalCurrentPostData((draft) => {
-          draft.count.read = count
+          draft.readCount = count
         })
       }
       break
     }
     case 'note': {
-      const currentData = getCurrentNoteData()?.data
+      const currentData = getCurrentNoteData()
       if (currentData?.id === id) {
         setCurrentNoteData((draft) => {
-          draft.data.count.read = count
+          draft.readCount = count
         })
       }
       break

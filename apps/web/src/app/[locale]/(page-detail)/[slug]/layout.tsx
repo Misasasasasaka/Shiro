@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { Metadata } from 'next'
 
+import { ArticleRoomSubscriber } from '~/components/common/ArticleRoomSubscriber'
 import { CommentAreaRootLazy } from '~/components/modules/comment'
 import { TocFAB } from '~/components/modules/toc/TocFAB'
 import { TocHeadingStrategyProvider } from '~/components/modules/toc/TocHeadingStrategy'
@@ -78,6 +79,7 @@ export default definePrerenderPage<PageParams>()({
       hasContent={!!data.content}
     >
       <CurrentPageDataProvider data={data} />
+      <ArticleRoomSubscriber id={data.id} />
       <div className="relative flex min-h-[120px] w-full">
         <PageLoading>
           <div className="relative w-full min-w-0">
@@ -112,7 +114,7 @@ export default definePrerenderPage<PageParams>()({
         <LayoutRightSideProvider className="absolute inset-y-0 right-0 hidden translate-x-full lg:block" />
       </div>
       <BottomToUpSoftScaleTransitionView delay={1000}>
-        <CommentAreaRootLazy refId={data.id} allowComment={data.allowComment} />
+        <CommentAreaRootLazy refId={data.id} />
       </BottomToUpSoftScaleTransitionView>
 
       <OnlyMobile>

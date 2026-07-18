@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl'
 import type { FC } from 'react'
 
 import { LazyLoad } from '~/components/common/Lazyload'
+import { useCanComment } from '~/providers/root/aggregation-data-provider'
 
 import { CommentBoxRoot } from './CommentBox/Root'
 import { Comments } from './Comments'
@@ -10,7 +11,7 @@ import type { CommentBaseProps } from './types'
 
 export const CommentAreaRoot: FC<
   CommentBaseProps & {
-    allowComment: boolean
+    allowComment?: boolean
   }
 > = (props) => {
   const t = useTranslations('comment')
@@ -22,8 +23,9 @@ export const CommentAreaRoot: FC<
   // if (isCN) return <NotSupport />
 
   const { allowComment, refId } = props
-  // 兜下后端的数据，默认开
-  if (!allowComment && allowComment !== undefined) {
+  const globallyAllowed = useCanComment()
+  const canComment = allowComment ?? globallyAllowed
+  if (!canComment) {
     return (
       <p className="mt-[7.1rem] text-center text-xl font-medium">
         {t('comments_closed')}

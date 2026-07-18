@@ -1,6 +1,5 @@
 'use client'
 
-import type { CommentModel } from '@mx-space/api-client'
 import { AnimatePresence } from 'motion/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -8,9 +7,8 @@ import { resolveRangeAnchor } from './anchor-resolve'
 import type { BlockInfo } from './anchor-utils'
 import { CommentAnchorPopover } from './CommentAnchorPopover'
 import { useRichContentElement } from './RichContentElementContext'
-import type { CommentAnchor, RangeAnchor } from './types'
-
-type CommentWithAnchor = CommentModel & { anchor?: CommentAnchor }
+import type { CommentWithAnchor } from './thread'
+import type { RangeAnchor } from './types'
 
 function anchorKey(anchor: RangeAnchor): string {
   return `${anchor.blockId}:${anchor.startOffset}:${anchor.endOffset}`

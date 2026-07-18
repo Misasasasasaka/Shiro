@@ -1,11 +1,5 @@
 'use client'
 
-import type {
-  CommentModel,
-  CommentThreadItem,
-  PaginateResult,
-} from '@mx-space/api-client'
-import type { InfiniteData } from '@tanstack/react-query'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
 import { useMemo, useRef, useSyncExternalStore } from 'react'
@@ -17,36 +11,30 @@ import type { BlockInfo } from './anchor-utils'
 import { extractBlockInfos } from './anchor-utils'
 import { CommentAnchorHighlight } from './CommentAnchorHighlight'
 import { CommentBlockGutter } from './CommentBlockGutter'
+import { normalizeCommentThreadPage } from './contract'
 import { RichContentElementProvider } from './RichContentElementContext'
-import { flattenThreadComments } from './thread'
-import type { CommentAnchor } from './types'
-
-type CommentWithAnchor = CommentModel & { anchor?: CommentAnchor }
-type CommentsQueryData = InfiniteData<
-  PaginateResult<CommentThreadItem & { anchor?: CommentAnchor; ref: string }>
->
+import {
+  type CommentThreadInfiniteData,
+  type CommentWithAnchor,
+  flattenThreadComments,
+} from './thread'
 
 function useAnchorCommentsQuery(refId: string): CommentWithAnchor[] {
   const { data } = useQuery({
     queryKey: ['comments', refId, 'anchors'],
     queryFn: async () => {
-      const data = await apiClient.comment.proxy
-        .ref(refId)
-        .get<
-          PaginateResult<
-            CommentThreadItem & { anchor?: CommentAnchor; ref: string }
-          >
-        >({
-          params: { hasAnchor: 'true', size: 50 },
-        })
-
-      return data
+      const response = await apiClient.comment.getByRefId(refId, {
+        page: 1,
+        size: 50,
+        sort: 'newest',
+      })
+      return normalizeCommentThreadPage(response, 1, 50)
     },
   })
 
   return useMemo(() => {
     if (!data) return []
-    return flattenThreadComments(data.data)
+    return flattenThreadComments(data.data).filter((comment) => comment.anchor)
   }, [data])
 }
 
@@ -60,15 +48,16 @@ function useCachedCommentsData(refId: string): CommentWithAnchor[] {
       const unsubscribe = queryCache.subscribe((event) => {
         if (
           event.type === 'updated' &&
-          event.query.queryHash === JSON.stringify(queryKey)
+          event.query.queryKey[0] === queryKey[0] &&
+          event.query.queryKey[1] === queryKey[1]
         ) {
           onStoreChange()
         }
       })
       return unsubscribe
     },
-    () => queryClient.getQueryData<CommentsQueryData>(queryKey),
-    () => null as CommentsQueryData | null,
+    () => queryClient.getQueryData<CommentThreadInfiniteData>(queryKey),
+    () => null as CommentThreadInfiniteData | null,
   )
 
   return useMemo(() => {
@@ -85,7 +74,7 @@ function useMergedAnchorComments(refId: string): CommentWithAnchor[] {
     const map = new Map<string, CommentWithAnchor>()
     for (const c of eagerComments) map.set(c.id, c)
     for (const c of cachedComments) {
-      if ((c as CommentWithAnchor).anchor) map.set(c.id, c)
+      if (c.anchor) map.set(c.id, c)
     }
     return [...map.values()]
   }, [eagerComments, cachedComments])

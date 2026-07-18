@@ -1,7 +1,7 @@
-import type { BusinessEvents } from '@mx-space/webhook'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 import { isDev } from '~/lib/env'
+import { type ClientBusinessEvent, EventTypes } from '~/types/events'
 
 import { articleReadCountHandlers } from './handlers/article-read-count'
 import { commentHandlers } from './handlers/comment'
@@ -28,8 +28,8 @@ for (const event of visitorEvents) {
 
 export const eventHandler = (
   type: string,
-  data: any,
-  router: AppRouterInstance,
+  data: unknown,
+  router?: AppRouterInstance,
 ) => {
   const ctx: EventHandlerContext = { router }
   const handler = handlerMap[type]
@@ -40,5 +40,9 @@ export const eventHandler = (
     console.info(type, data)
   }
 
-  WsEvent.emit(type as BusinessEvents, data)
+  if (isBusinessEvent(type)) WsEvent.emit(type, data)
 }
+
+const businessEvents = new Set<string>(Object.values(EventTypes))
+const isBusinessEvent = (type: string): type is ClientBusinessEvent =>
+  businessEvents.has(type)

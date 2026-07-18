@@ -1,9 +1,4 @@
-import type {
-  CommentModel,
-  PaginateResult,
-  ReaderModel,
-} from '@mx-space/api-client'
-import type { InfiniteData } from '@tanstack/react-query'
+import type { CommentModel, ReaderModel } from '@mx-space/api-client'
 import { createContextState } from 'foxact/create-context-state'
 import type { PrimitiveAtom } from 'jotai'
 import { atom, useAtomValue } from 'jotai'
@@ -31,6 +26,7 @@ import {
   type CommentThreadInfiniteData,
   type CommentThreadViewItem,
 } from './thread'
+import type { CommentAnchor } from './types'
 
 const CommentReaderMapContext = createContext<Record<string, ReaderModel>>({})
 const CommentListContext = createReactContext<
@@ -46,11 +42,7 @@ export const [
 export const CommentProvider: FC<{
   refId: string
   children: (
-    data: InfiniteData<
-      PaginateResult<CommentModel & { ref: string }> & {
-        readers: Record<string, ReaderModel>
-      }
-    >,
+    data: CommentThreadInfiniteData,
     commentAtom: PrimitiveAtom<Record<string, CommentThreadViewItem>>,
   ) => ReactNode
 }> = ({ children, refId }) => {
@@ -73,7 +65,7 @@ export const CommentProvider: FC<{
     }
 
     dts(
-      (data as CommentThreadInfiniteData).pages.flatMap((page) =>
+      data.pages.flatMap((page) =>
         page.data.map((comment) => buildCommentTreeItem(comment)),
       ),
     )
@@ -146,12 +138,19 @@ export const useCommentById = (commentId: string) => {
 export const useUpdateComment = () => {
   const commentsAtom = use(CommentListContext)
   return useCallback(
-    (comment: Partial<CommentModel> & { id: string }) => {
+    (
+      comment: Partial<Omit<CommentModel, 'anchor'>> & {
+        anchor?: CommentAnchor | null
+        id: string
+      },
+    ) => {
       jotaiStore.set(commentsAtom, (prev) => {
+        const current = prev[comment.id]
+        if (!current) return prev
         const newComments = {
           ...prev,
           [comment.id]: {
-            ...prev[comment.id],
+            ...current,
             ...comment,
             editedAt: new Date().toISOString(),
           },

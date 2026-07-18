@@ -1,9 +1,11 @@
 'use client'
 
-import type {
-  CommentDto,
-  CommentModel,
-  RequestError,
+import {
+  type AnonymousCommentDto,
+  CollectionRefTypes,
+  type CommentModel,
+  type ReaderCommentDto,
+  type RecentlyModel,
 } from '@mx-space/api-client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ExtractAtomValue } from 'jotai'
@@ -14,6 +16,7 @@ import type { PropsWithChildren } from 'react'
 import { use, useCallback } from 'react'
 
 import { useIsOwnerLogged } from '~/atoms/hooks/owner'
+import { useSessionReader } from '~/atoms/hooks/reader'
 import { apiClient } from '~/lib/request'
 import { getErrorMessageFromRequestError } from '~/lib/request.shared'
 import { jotaiStore } from '~/lib/store'
@@ -77,15 +80,37 @@ export const useCommentBoxTextIsOversize = () =>
   )
 type CommentContextValue = ReturnType<typeof createInitialValue>
 
-export const useSetCommentBoxValues = <
-  T extends keyof CommentContextValue,
->() => {
+type CommentBoxValueMap = {
+  [Key in keyof CommentContextValue]: ExtractAtomValue<CommentContextValue[Key]>
+}
+type SetCommentBoxArgs = {
+  [Key in keyof CommentBoxValueMap]: [Key, CommentBoxValueMap[Key]]
+}[keyof CommentBoxValueMap]
+
+export const useSetCommentBoxValues = () => {
   const ctx = use(CommentBoxContext)
   return useCallback(
-    (key: T, value: ExtractAtomValue<CommentContextValue[T]>) => {
-      const atom = ctx[key]
-      if (!atom) throw new Error(`atom ${key} not found`)
-      jotaiStore.set(atom as any, value)
+    (...args: SetCommentBoxArgs) => {
+      switch (args[0]) {
+        case 'anchor':
+          jotaiStore.set(ctx.anchor, args[1])
+          break
+        case 'isWhisper':
+          jotaiStore.set(ctx.isWhisper, args[1])
+          break
+        case 'syncToRecently':
+          jotaiStore.set(ctx.syncToRecently, args[1])
+          break
+        case 'author':
+        case 'avatar':
+        case 'mail':
+        case 'refId':
+        case 'source':
+        case 'text':
+        case 'url':
+          jotaiStore.set(ctx[args[0]], args[1])
+          break
+      }
     },
     [ctx],
   )
@@ -116,9 +141,6 @@ export const useSendComment = () => {
     mail: mailAtom,
     url: urlAtom,
 
-    source: sourceAtom,
-    avatar: avatarAtom,
-
     anchor: anchorAtom,
 
     isWhisper: isWhisperAtom,
@@ -126,6 +148,7 @@ export const useSendComment = () => {
   } = useGetCommentBoxAtomValues()
   const { afterSubmit } = useCommentBoxLifeCycle()
   const isLogged = useIsOwnerLogged()
+  const reader = useSessionReader()
   const queryClient = useQueryClient()
   const isReply = useUseCommentReply()
   const originalRefId = useCommentOriginalRefId()
@@ -141,95 +164,66 @@ export const useSendComment = () => {
       const text = jotaiStore.get(textAtom)
       const author = jotaiStore.get(authorAtom)
       const mail = jotaiStore.get(mailAtom)
-      const avatar = jotaiStore.get(avatarAtom)
-      const source = jotaiStore.get(sourceAtom) as any
       const url = jotaiStore.get(urlAtom)
       const anchor = jotaiStore.get(anchorAtom)
-
-      const commentDto: CommentDto & { anchor?: CommentAnchor } = {
-        text,
+      const isWhisper = jotaiStore.get(isWhisperAtom)
+      const isAuthenticated = isLogged || !!reader
+      const guestDto: AnonymousCommentDto & { anchor?: CommentAnchor } = {
         author,
         mail,
-        avatar,
-        source,
-        url,
+        text,
+        ...(url ? { url } : {}),
+        ...(anchor ? { anchor } : {}),
+        ...(isWhisper ? { isWhispers: true } : {}),
       }
-      if (anchor) commentDto.anchor = anchor
-
-      if (isLogged) {
-        delete commentDto.avatar
+      const readerDto: ReaderCommentDto & { anchor?: CommentAnchor } = {
+        text,
+        ...(anchor ? { anchor } : {}),
+        ...(isWhisper ? { isWhispers: true } : {}),
       }
-
-      // Omit empty string key
-      Object.keys(commentDto).forEach((key) => {
-        // @ts-expect-error
-        if (commentDto[key] === '') delete commentDto[key]
-      })
 
       // Reply Comment
       if (isReply) {
-        if (isLogged) {
-          return apiClient.comment.proxy.owner
-            .reply(refId)
-            .post<CommentModel>({
-              data: {
-                text,
-                source,
-              },
-            })
-            .then(wrappedCompletedCallback)
-        } else {
-          return apiClient.comment
-            .reply(refId, commentDto)
-            .then(wrappedCompletedCallback)
-        }
+        const result = isAuthenticated
+          ? await apiClient.comment.readerReply(refId, readerDto)
+          : await apiClient.comment.guestReply(refId, guestDto)
+        return wrappedCompletedCallback(result)
       }
 
       // Normal Comment
-      const isWhisper = jotaiStore.get(isWhisperAtom)
       const syncToRecently = jotaiStore.get(syncToRecentlyAtom)
 
-      if (isLogged) {
-        return apiClient.comment.proxy.owner
-          .comment(refId)
-          .post<CommentModel>({
-            data: { text, source, ...(anchor ? { anchor } : {}) },
-          })
-          .then(async (res) => {
-            if (syncToRecently)
-              apiClient.recently.proxy
-                .post({
-                  data: {
-                    content: text,
-                    ref: refId,
-                  },
-                })
-                .then(() => {
-                  toast.success(t('synced_to_thinking'))
-                })
+      const result = isAuthenticated
+        ? await apiClient.comment.readerComment(refId, readerDto)
+        : await apiClient.comment.guestComment(refId, guestDto)
 
-            return res
+      if (isLogged && syncToRecently) {
+        const refType = getCollectionRefType(location.pathname)
+        void apiClient.recently.proxy
+          .post<RecentlyModel>({
+            data: {
+              content: text,
+              refId,
+              refType,
+            },
           })
-          .then(wrappedCompletedCallback)
+          .then(() => toast.success(t('synced_to_thinking')))
       }
-      // @ts-ignore
-      commentDto.isWhispers = isWhisper
-      return apiClient.comment
-        .comment(refId, commentDto)
-        .then(wrappedCompletedCallback)
+      return wrappedCompletedCallback(result)
     },
     mutationKey: [commentRefId, 'comment'],
-    onError(error: RequestError) {
+    onError(error) {
       toast.error(getErrorMessageFromRequestError(error))
     },
     onSuccess() {
       afterSubmit?.()
 
-      const toastCopy = isLogged
-        ? t('submit_success')
-        : isReply
-          ? t('reply_success')
-          : t('comment_success')
+      const toastCopy =
+        isLogged || reader
+          ? t('submit_success')
+          : isReply
+            ? t('reply_success')
+            : t('comment_success')
 
       const commentListQueryKey = buildCommentsQueryKey(originalRefId)
 
@@ -239,6 +233,9 @@ export const useSendComment = () => {
       queryClient.invalidateQueries({
         queryKey: commentListQueryKey,
       })
+      queryClient.invalidateQueries({
+        queryKey: ['comments', originalRefId, 'anchors'],
+      })
     },
   })
 
@@ -246,4 +243,11 @@ export const useSendComment = () => {
     useCallback(() => mutate(commentRefId), [commentRefId, mutate]),
     isPending,
   ] as const
+}
+
+const getCollectionRefType = (pathname: string): CollectionRefTypes => {
+  if (pathname.includes('/posts/')) return CollectionRefTypes.Post
+  if (pathname.includes('/notes/')) return CollectionRefTypes.Note
+  if (pathname.includes('/thinking')) return CollectionRefTypes.Recently
+  return CollectionRefTypes.Page
 }

@@ -8,9 +8,13 @@ import { queryClient } from '~/providers/root/react-query-provider'
 import { EventTypes } from '~/types/events'
 
 import type { EventHandler } from './types'
-import { trackerRealtimeEvent } from './types'
+import { hasStringId, trackerRealtimeEvent } from './types'
+
+const isSayEvent = (data: unknown): data is SayModel =>
+  hasStringId(data) && typeof Reflect.get(data, 'text') === 'string'
 
 export const sayCreateHandler: EventHandler = (data) => {
+  if (!isSayEvent(data)) return
   if (location.pathname === routeBuilder(Routes.Says, {})) {
     trackerRealtimeEvent()
     queryClient.setQueryData<InfiniteData<PaginateResult<SayModel>>>(

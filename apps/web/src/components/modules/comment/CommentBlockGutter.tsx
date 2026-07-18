@@ -1,6 +1,5 @@
 'use client'
 
-import type { CommentModel } from '@mx-space/api-client'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useIsMobile } from '~/atoms/hooks/viewport'
@@ -12,9 +11,7 @@ import type { BlockInfo } from './anchor-utils'
 import { buildBlockAnchorFromIndex } from './anchor-utils'
 import { CommentBlockThread } from './CommentBlockThread'
 import { useRichContentElement } from './RichContentElementContext'
-import type { CommentAnchor } from './types'
-
-type CommentWithAnchor = CommentModel & { anchor?: CommentAnchor }
+import type { CommentWithAnchor } from './thread'
 
 interface CommentBlockGutterProps {
   blockInfos: BlockInfo[]
@@ -35,10 +32,11 @@ function AvatarStack({
     const seen = new Set<string>()
     const result: { avatar?: string; author: string }[] = []
     for (const c of comments) {
-      const key = c.avatar || c.author
+      const author = c.author ?? 'Anonymous'
+      const key = c.avatar || author
       if (!seen.has(key)) {
         seen.add(key)
-        result.push({ avatar: c.avatar, author: c.author })
+        result.push({ avatar: c.avatar ?? undefined, author })
       }
     }
     return result.slice(0, 3)
@@ -184,7 +182,7 @@ export function CommentBlockGutter({
     for (const c of comments) {
       const { anchor } = c
       if (!anchor?.blockId) continue
-      const anchorLang = (anchor as CommentAnchor).lang ?? null
+      const anchorLang = anchor.lang ?? null
       const isBlock = anchor.mode === 'block'
       const langMatch = anchorLang === currentLang
       if (isBlock || !langMatch) {

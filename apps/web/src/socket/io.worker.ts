@@ -1,134 +1,75 @@
+/// <reference lib="webworker" />
+
 import type { Socket } from 'socket.io-client'
 import { io } from 'socket.io-client'
 
-/// <reference lib="webworker" />
+import type { SocketWorkerInput, SocketWorkerOutput } from './protocol'
 
-let ws: Socket | null = null
+const workerScope = self as DedicatedWorkerGlobalScope
+let socket: Socket | null = null
+const waitingEmitQueue: Array<{ payload: unknown; type: string }> = []
 
-function setupIo(config: {
-  url: string
-  socket_session_id: string
+const post = (message: SocketWorkerOutput) => workerScope.postMessage(message)
+
+const setupIo = (config: {
   lang?: string
-}) {
-  if (ws) return
-  // 使用 socket.io
-  console.info('Connecting to io, url:', config.url)
+  socketSessionId: string
+  url: string
+}) => {
+  if (socket) return
 
-  ws = io(config.url, {
-    timeout: 10000,
-    reconnectionDelay: 3000,
+  socket = io(config.url, {
     autoConnect: false,
     reconnectionAttempts: 3,
+    reconnectionDelay: 3000,
+    timeout: 10000,
     transports: ['websocket'],
-
     query: {
-      socket_session_id: config.socket_session_id,
+      socket_session_id: config.socketSessionId,
       ...(config.lang ? { lang: config.lang } : {}),
     },
   })
-  if (!ws) return
 
-  ws.on('disconnect', () => {
-    boardcast({
-      type: 'disconnect',
-    })
-  })
+  socket.on('disconnect', () => post({ type: 'disconnect' }))
+  socket.on('message', (payload: unknown) => post({ payload, type: 'message' }))
+  socket.on('connect', () => {
+    const currentSocket = socket
+    if (!currentSocket) return
 
-  /**
-   * @param {any} payload
-   */
-  ws.on('message', (payload) => {
-    console.info('ws', payload)
-
-    boardcast({
-      type: 'message',
-      payload,
-    })
-  })
-
-  ws.on('connect', () => {
-    console.info('Connected to ws.io server from SharedWorker')
-
-    if (waitingEmitQueue.length > 0) {
-      waitingEmitQueue.forEach((payload) => {
-        if (!ws) return
-        ws.emit('message', payload)
-      })
-      waitingEmitQueue.length = 0
+    for (const payload of waitingEmitQueue.splice(0)) {
+      currentSocket.emit('message', payload)
     }
-    boardcast({
-      type: 'connect',
-      // @ts-expect-error
-      payload: ws.id,
-    })
-  })
 
-  ws.open()
-  boardcast({
-    type: 'sid',
-    payload: ws.id,
+    post({ payload: currentSocket.id, type: 'connect' })
+    post({ payload: currentSocket.id, type: 'sid' })
   })
+  socket.open()
 }
 
-const ports = [] as MessagePort[]
+workerScope.onmessage = (event: MessageEvent<SocketWorkerInput>) => {
+  const message = event.data
 
-const preparePort = (port: MessagePort | Window) => {
-  port.onmessage = (event) => {
-    const { type, payload } = event.data
-    console.info('get message from main', event.data)
-
-    switch (type) {
-      case 'config': {
-        setupIo(payload)
-        break
+  switch (message.type) {
+    case 'config': {
+      setupIo(message.payload)
+      break
+    }
+    case 'emit': {
+      if (socket?.connected) socket.emit('message', message.payload)
+      else waitingEmitQueue.push(message.payload)
+      break
+    }
+    case 'reconnect': {
+      socket?.open()
+      break
+    }
+    case 'init': {
+      post({ type: 'ping' })
+      if (socket?.connected) {
+        post({ payload: socket.id, type: 'connect' })
       }
-      case 'emit': {
-        if (ws) {
-          if (ws.connected) ws.emit('message', payload)
-          else waitingEmitQueue.push(payload)
-        }
-        break
-      }
-      case 'reconnect': {
-        if (ws) ws.open()
-        break
-      }
-      case 'init': {
-        port.postMessage({ type: 'ping' })
-
-        if (ws) {
-          if (ws.connected) port.postMessage({ type: 'connect' })
-          port.postMessage({ type: 'sid', payload: ws.id })
-        }
-        break
-      }
-      default: {
-        console.info('Unknown message type:', type)
-      }
+      if (socket?.id) post({ payload: socket.id, type: 'sid' })
+      break
     }
   }
 }
-
-self.addEventListener('connect', (ev: any) => {
-  const event = ev as MessageEvent
-
-  const port = event.ports[0]
-
-  ports.push(port)
-  preparePort(port)
-  port.start()
-})
-
-if (!('SharedWorkerGlobalScope' in self)) {
-  ports.push(self as any as MessagePort)
-  preparePort(self)
-}
-
-function boardcast(payload: any) {
-  console.info('[ws] boardcast', payload)
-  ports.forEach((port) => {
-    port.postMessage(payload)
-  })
-}
-
-const waitingEmitQueue: any[] = []
