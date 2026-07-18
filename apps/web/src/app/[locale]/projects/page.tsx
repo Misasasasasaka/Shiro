@@ -17,10 +17,7 @@ export default function Page() {
   const tCommon = useTranslations('common')
   const { data, isLoading } = useQuery({
     queryKey: ['projects'],
-    queryFn: async () => {
-      const data = await apiClient.project.getAll()
-      return data.data
-    },
+    queryFn: async () => (await apiClient.project.getAll()).$serialized,
   })
 
   const githubUsername = useAggregationSelector(

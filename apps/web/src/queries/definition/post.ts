@@ -1,16 +1,9 @@
-import type {
-  ModelWithLiked,
-  ModelWithTranslation,
-  PostModel,
-} from '@mx-space/api-client'
-
 import { apiClient } from '~/lib/request'
+import type { PostDetail } from '~/types/content'
 
 import { defineQuery } from '../helper'
 
-export type PostWithTranslation = ModelWithLiked<
-  ModelWithTranslation<PostModel>
->
+export type PostWithTranslation = PostDetail
 
 export const post = {
   bySlug: (category: string, slug: string, lang?: string) =>
@@ -30,7 +23,7 @@ export const post = {
           prefer: 'lexical',
         })
 
-        return data.$serialized as PostWithTranslation
+        return data as PostWithTranslation
       },
     }),
 }

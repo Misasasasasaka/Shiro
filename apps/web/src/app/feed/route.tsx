@@ -9,7 +9,6 @@ import { ContainerRule as __ContainerRule } from '~/components/ui/markdown/parse
 import { InsertRule } from '~/components/ui/markdown/parsers/ins'
 import { MentionRule } from '~/components/ui/markdown/parsers/mention'
 import { SpoilerRule } from '~/components/ui/markdown/parsers/spoiler'
-import { get } from '~/lib/lodash'
 import { apiClient } from '~/lib/request'
 
 export const dynamic = 'force-dynamic'
@@ -21,8 +20,8 @@ interface RSSProps {
   author: string
   description: string
   data: {
-    created: Date | null
-    modified: Date | null
+    createdAt: string
+    modifiedAt: string | null
     link: string
     title: string
     text: string
@@ -42,16 +41,13 @@ export async function GET() {
   const { title, description } = agg.seo
 
   const now = new Date()
-  const custom_elements = get(
-    agg.$raw.theme as AppConfig,
-    'config.module.rss.custom_elements',
-  )
-  const noRSS = get(agg.$raw.theme as AppConfig, 'config.module.rss.noRSS')
+  const custom_elements = agg.theme?.config.module.rss.custom_elements
+  const noRSS = agg.theme?.config.module.rss.noRSS
 
   const followChallengeIndex = custom_elements
-    ? custom_elements.findIndex((item: any) => item.follow_challenge)
+    ? custom_elements.findIndex((item) => item.follow_challenge)
     : -1
-  if (-~followChallengeIndex) {
+  if (custom_elements && followChallengeIndex >= 0) {
     const map = {} as Record<string, string>
 
     const { follow_challenge } = custom_elements[followChallengeIndex]
@@ -207,7 +203,7 @@ export async function GET() {
       author,
       title: item.title,
       url: item.link,
-      date: item.created!,
+      date: item.createdAt,
       description: render(),
     })
   })

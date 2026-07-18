@@ -1,6 +1,5 @@
 'use client'
 
-import type { NoteWrappedWithLikedAndTranslationPayload } from '@mx-space/api-client'
 import { useQuery } from '@tanstack/react-query'
 import { createModelDataProvider } from 'jojoo/react'
 import { useSearchParams } from 'next/navigation'
@@ -8,6 +7,7 @@ import { useLocale } from 'next-intl'
 import { useEffect } from 'react'
 
 import { queries } from '~/queries/definition'
+import type { NoteDetail } from '~/types/content'
 
 const {
   ModelDataProvider,
@@ -16,7 +16,7 @@ const {
   setGlobalModelData: setModelData,
   useModelDataSelector,
   useSetModelData,
-} = createModelDataProvider<NoteWrappedWithLikedAndTranslationPayload>()
+} = createModelDataProvider<NoteDetail>()
 
 export {
   ModelDataAtomProvider as CurrentNoteDataAtomProvider,
@@ -28,7 +28,7 @@ export {
 }
 
 export const SyncNoteDataAfterLoggedIn = () => {
-  const nid = useModelDataSelector((data) => data?.data.nid)
+  const nid = useModelDataSelector((data) => data?.nid)
   const password = useSearchParams().get('password')
   const locale = useLocale()
   const { data } = useQuery({
@@ -38,9 +38,8 @@ export const SyncNoteDataAfterLoggedIn = () => {
 
   useEffect(() => {
     if (data) {
-      const noteData = data as NoteWrappedWithLikedAndTranslationPayload
       setModelData((draft) => {
-        draft.data = noteData.data
+        Object.assign(draft, data)
       })
     }
   }, [data])

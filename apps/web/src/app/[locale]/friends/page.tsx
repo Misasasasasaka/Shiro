@@ -5,7 +5,7 @@ import { LinkState, LinkType, RequestError } from '@mx-space/api-client'
 import { useQuery } from '@tanstack/react-query'
 import Markdown from 'markdown-to-jsx'
 import { useTranslations } from 'next-intl'
-import type { FC } from 'react'
+import type { FC, FormEvent } from 'react'
 import { useCallback, useRef } from 'react'
 
 import { NotSupport } from '~/components/common/NotSupport'
@@ -33,10 +33,7 @@ export default function Page() {
   const t = useTranslations('friends')
   const { data, isLoading } = useQuery({
     queryKey: ['friends'],
-    queryFn: async () => {
-      const { data } = await apiClient.link.getAll()
-      return data
-    },
+    queryFn: async () => await apiClient.link.getAll(),
     select: useCallback((data: LinkModel[]) => {
       const friends: LinkModel[] = []
       const collections: LinkModel[] = []
@@ -154,7 +151,7 @@ const Card: FC<{ link: LinkModel }> = ({ link }) => {
     >
       <Avatar
         randomColor
-        imageUrl={link.avatar}
+        imageUrl={link.avatar ?? undefined}
         lazy
         radius={8}
         text={link.name[0]}
@@ -360,22 +357,39 @@ const FormModal = () => {
   const formRef = useRef<FormContextType>(null)
 
   const handleSubmit = useCallback(
-    (e: any) => {
+    (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault()
       const currentValues = formRef.current?.getCurrentValues()
       if (!currentValues) return
 
+      const { author } = currentValues
+      const { avatar } = currentValues
+      const { description } = currentValues
+      const { email } = currentValues
+      const { name } = currentValues
+      const { url } = currentValues
+      if (
+        typeof author !== 'string' ||
+        typeof avatar !== 'string' ||
+        typeof description !== 'string' ||
+        typeof email !== 'string' ||
+        typeof name !== 'string' ||
+        typeof url !== 'string'
+      ) {
+        return
+      }
+
       apiClient.link
-        .applyLink({ ...(currentValues as any) })
+        .applyLink({ author, avatar, description, email, name, url })
         .then(() => {
           dismissTop()
           toast.success(t('submit_success'))
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           if (err instanceof RequestError)
             toast.error(getErrorMessageFromRequestError(err))
           else {
-            toast.error(err.message)
+            toast.error(err instanceof Error ? err.message : String(err))
           }
         })
     },

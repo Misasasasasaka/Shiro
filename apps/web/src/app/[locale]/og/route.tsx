@@ -1,7 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import type { Image } from '@mx-space/api-client'
 import {
   AggregateController,
   createClient,
@@ -45,6 +44,7 @@ const fontSearchDirs = [
   '/usr/share/fonts/truetype/lxgw-wenkai',
   '/usr/share/fonts/truetype/lxgw',
   '/usr/share/fonts/truetype/chinese',
+  '/usr/share/fonts/truetype/dejavu',
   // macOS common paths (local dev)
   '/Library/Fonts',
   process.env.HOME ? join(process.env.HOME, 'Library/Fonts') : '',
@@ -60,8 +60,7 @@ async function loadFont(
     for (const dir of fontSearchDirs) {
       try {
         const font = await readFile(join(dir, fileName))
-        // @ts-expect-error
-        return font
+        return Uint8Array.from(font).buffer
       } catch {
         continue
       }
@@ -122,9 +121,6 @@ export const GET = async (
     let document: {
       title: string
       subtitle: string
-      meta: any
-      images: Image[] | undefined
-      id: string
     }
 
     switch (data.type) {
@@ -135,9 +131,6 @@ export const GET = async (
           .then((r) => ({
             title: r.title,
             subtitle: r.category.name,
-            meta: r.meta,
-            images: r.images,
-            id: r.id,
           }))
         break
       }
@@ -145,13 +138,10 @@ export const GET = async (
       case 'note': {
         const { nid } = data
         document = await apiClient.note
-          .getNoteByNid(+nid, { lang: locale })
+          .getNoteByNid(nid, { lang: locale })
           .then((r) => ({
-            title: r.data.title,
+            title: r.title,
             subtitle: messages.nav_notes,
-            meta: r.data.meta,
-            images: r.data.images,
-            id: r.data.id,
           }))
         break
       }
@@ -160,9 +150,6 @@ export const GET = async (
         document = await apiClient.page.getBySlug(slug).then((data) => ({
           title: data.title,
           subtitle: data.subtitle || '',
-          meta: data.meta,
-          images: data.images,
-          id: data.id,
         }))
         break
       }
@@ -178,16 +165,27 @@ export const GET = async (
 
     const [fontData, fontDataBold] = useGeist
       ? await Promise.all([
-          loadFont(['Geist-Regular.ttf']),
+          loadFont(['Geist-Regular.ttf', 'DejaVuSans.ttf']),
           loadFont([
             'Geist-SemiBold.ttf',
             'Geist-Medium.ttf',
             'Geist-Bold.ttf',
+            'DejaVuSans-Bold.ttf',
           ]),
         ])
       : await Promise.all([
-          loadFont(['LXGWWenKai-Regular.ttf']),
-          loadFont(['LXGWWenKai-Medium.ttf']),
+          loadFont([
+            'LXGWWenKai-Regular.ttf',
+            'NotoSansCJKsc-Regular.otf',
+            'NotoSansCJK-Regular.ttc',
+            'DejaVuSans.ttf',
+          ]),
+          loadFont([
+            'LXGWWenKai-Medium.ttf',
+            'NotoSansCJKsc-Medium.otf',
+            'NotoSansCJK-Medium.ttc',
+            'DejaVuSans-Bold.ttf',
+          ]),
         ])
 
     const {
@@ -334,24 +332,25 @@ export const GET = async (
           fontData && {
             name: useGeist ? 'Geist' : 'LXGW WenKai',
             data: fontData,
-            weight: 400,
-            style: 'normal',
+            weight: 400 as const,
+            style: 'normal' as const,
           },
           fontDataBold && {
             name: useGeist ? 'Geist' : 'LXGW WenKai',
             data: fontDataBold,
-            weight: 600,
-            style: 'normal',
+            weight: 600 as const,
+            style: 'normal' as const,
           },
-        ].filter(Boolean) as any[],
+        ].filter((font) => font !== null),
         headers: {
           'Cache-Control':
             'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400',
         },
       },
     )
-  } catch (e: any) {
-    return new Response(`Failed to generate the OG image. Error ${e.message}`, {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    return new Response(`Failed to generate the OG image. Error ${message}`, {
       status: 500,
     })
   }

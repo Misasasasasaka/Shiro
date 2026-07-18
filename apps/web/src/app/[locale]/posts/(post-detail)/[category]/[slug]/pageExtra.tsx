@@ -20,7 +20,10 @@ import {
   useCurrentPostDataSelector,
   useSetCurrentPostData,
 } from '~/providers/post/CurrentPostDataProvider'
-import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
+import {
+  useAggregationSelector,
+  useCanComment,
+} from '~/providers/root/aggregation-data-provider'
 import type { PostWithTranslation } from '~/queries/definition'
 import { queries } from '~/queries/definition'
 
@@ -61,7 +64,7 @@ export const PostTitle = () => {
 export const MarkdownSelection: Component = (props) => {
   const id = useCurrentPostDataSelector((data) => data?.id)!
   const title = useCurrentPostDataSelector((data) => data?.title)!
-  const allowComment = useCurrentPostDataSelector((data) => data?.allowComment)!
+  const allowComment = useCanComment()
   return (
     <WithArticleSelectionAction
       refId={id}
@@ -92,18 +95,17 @@ export const PostMetaBarInternal: Component = ({ className }) => {
   const meta = useCurrentPostDataSelector((data) => {
     if (!data) return
     return {
-      created: data.created,
+      createdAt: data.createdAt,
       category: data.category,
       tags: data.tags,
-      count: data.count,
-      modified: data.modified,
+      likeCount: data.likeCount,
+      modifiedAt: data.modifiedAt,
+      readCount: data.readCount,
     }
   })
 
   if (!meta) return null
-  return (
-    <PostMetaBar meta={meta} className={className} />
-  )
+  return <PostMetaBar meta={meta} className={className} />
 }
 
 export const PostDataReValidate: FC<{

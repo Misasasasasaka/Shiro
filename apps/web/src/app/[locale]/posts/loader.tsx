@@ -11,6 +11,7 @@ import type { FC } from 'react'
 import { PostItemComposer } from '~/components/modules/post/PostItemComposer'
 import { LoadMoreIndicator } from '~/components/modules/shared/LoadMoreIndicator'
 import { Loading } from '~/components/ui/loading'
+import { normalizePostSortBy } from '~/lib/post-sort'
 import { apiClient } from '~/lib/request'
 
 export const PostLoadMore: FC<{ pagination: Pager }> = ({ pagination }) => {
@@ -30,20 +31,20 @@ export const PostLoadMore: FC<{ pagination: Pager }> = ({ pagination }) => {
       sortBy,
       orderBy,
       preferredLang,
-      initialPageParam.currentPage,
+      initialPageParam.page,
     ],
     queryFn: async ({ pageParam }) => {
       return await apiClient.post.getList(pageParam, 10, {
-        sortBy: sortBy as any,
+        sortBy: normalizePostSortBy(sortBy),
         sortOrder: orderBy === 'desc' ? -1 : 1,
         truncate: 310,
         lang: preferredLang,
       })
     },
-    initialPageParam: initialPageParam.currentPage + 1,
+    initialPageParam: initialPageParam.page + 1,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasNextPage
-        ? lastPage.pagination.currentPage + 1
+        ? lastPage.pagination.page + 1
         : undefined,
     enabled: !!initialPageParam.hasNextPage,
   })

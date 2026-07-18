@@ -1,4 +1,3 @@
-import type { NoteWrappedWithLikedAndTranslationPayload } from '@mx-space/api-client'
 import { useQuery } from '@tanstack/react-query'
 import { atom } from 'jotai'
 import type { FC } from 'react'
@@ -22,6 +21,7 @@ import {
 } from '~/providers/note/CurrentNoteDataProvider'
 import { WrappedElementProvider } from '~/providers/shared/WrappedElementProvider'
 import { queries } from '~/queries/definition'
+import type { NoteDetail } from '~/types/content'
 
 import { NoteHideIfSecret, NoteMetaBar, NoteRootBanner } from '../note'
 import { NoteHeadCover } from '../note/NoteHeadCover'
@@ -35,14 +35,11 @@ export const NotePreview: FC<NotePreviewProps> = (props) => {
     ...queries.note.byNid(props.noteId.toString()),
   })
 
-  const overrideAtom = useMemo(
-    () => atom(null! as NoteWrappedWithLikedAndTranslationPayload),
-    [],
-  )
+  const overrideAtom = useMemo(() => atom(null! as NoteDetail), [])
   if (isLoading) return <Loading className="w-full" useDefaultLoadingText />
   if (!data) return null
-  const noteData = data as NoteWrappedWithLikedAndTranslationPayload
-  const note = noteData.data
+  const noteData = data as NoteDetail
+  const note = noteData
   return (
     <CurrentNoteDataAtomProvider overrideAtom={overrideAtom}>
       <CurrentNoteDataProvider data={noteData} />

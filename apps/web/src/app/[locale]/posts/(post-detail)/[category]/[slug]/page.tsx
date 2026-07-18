@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import type { Article, WithContext } from 'schema-dts'
 
 import { AckRead } from '~/components/common/AckRead'
+import { ArticleRoomSubscriber } from '~/components/common/ArticleRoomSubscriber'
 import { ClientOnly } from '~/components/common/ClientOnly'
 import { CommentAreaRootLazy } from '~/components/modules/comment'
 import {
@@ -35,6 +36,7 @@ import {
   LayoutRightSideProvider,
 } from '~/providers/shared/LayoutRightSideProvider'
 import { WrappedElementProvider } from '~/providers/shared/WrappedElementProvider'
+import { contentMetaFor } from '~/types/content'
 
 import type { PageParams, PostDataResult, PostWithTranslation } from './api'
 import { getData } from './api'
@@ -83,9 +85,10 @@ export const generateMetadata = async (props: {
       params.locale as any,
       canonicalPathNoLocale,
     )
+    const translation = contentMetaFor(data).translation?.article
     const supportedLocales = getSupportedLocalesFromTranslations({
-      sourceLang: data.translationMeta?.sourceLang,
-      availableTranslations: (data as any).availableTranslations,
+      sourceLang: translation?.sourceLang,
+      availableTranslations: translation?.availableTranslations,
     })
 
     return {
@@ -188,8 +191,8 @@ export default definePrerenderPage<PageParams>()<PostDataResult>({
       headline: data.title,
       image: data.meta?.cover ? [data.meta.cover] : undefined,
       description: data.summary || (data.text ?? '').slice(0, 200),
-      datePublished: data.created,
-      dateModified: data.modified || undefined,
+      datePublished: data.createdAt,
+      dateModified: data.modifiedAt || undefined,
     }
 
     return (
@@ -201,6 +204,7 @@ export default definePrerenderPage<PageParams>()<PostDataResult>({
         <LdJsonWithAuthor baseLdJson={jsonLd} />
 
         <CurrentPostDataProvider data={data} />
+        <ArticleRoomSubscriber id={data.id} />
         <PostDataReValidate fetchedAt={fetchedAt} />
         <div
           data-server-fetched-at={fetchedAt}
@@ -210,10 +214,7 @@ export default definePrerenderPage<PageParams>()<PostDataResult>({
             <PostPage data={data} />
 
             <BottomToUpSoftScaleTransitionView delay={500}>
-              <CommentAreaRootLazy
-                refId={data.id}
-                allowComment={data.allowComment}
-              />
+              <CommentAreaRootLazy refId={data.id} />
             </BottomToUpSoftScaleTransitionView>
           </BottomToUpTransitionView>
 

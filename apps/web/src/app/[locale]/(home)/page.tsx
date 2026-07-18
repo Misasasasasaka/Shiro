@@ -49,7 +49,8 @@ export default function Home() {
     '@type': 'ItemList',
     itemListElement: [...notes, ...posts]
       .sort(
-        (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime(),
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .map((article, index) => ({
         '@type': 'ListItem',
@@ -62,13 +63,13 @@ export default function Home() {
             url: config?.url.webUrl,
           },
           headline: article.title,
-          image: article.meta?.cover || [],
+          image: article.images?.map((image) => image.src) || [],
           name: article.title,
           url:
             'nid' in article
               ? `${config?.url.webUrl}/notes/${article.nid}`
               : `${config?.url.webUrl}/posts/${article.category.slug}/${article.slug}`,
-          datePublished: article.created,
+          datePublished: article.createdAt,
         },
       })),
   }

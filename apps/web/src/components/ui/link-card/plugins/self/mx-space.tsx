@@ -52,9 +52,8 @@ export const mxSpacePlugin: LinkCardPlugin = {
     let data: {
       title: string
       text?: string
-      images?: { src: string }[]
-      meta?: Record<string, any> | null
-      cover?: string
+      images?: { src: string }[] | null
+      meta?: { cover?: string } | null
       summary?: string | null
     } = { title: '', text: '' }
 
@@ -63,11 +62,10 @@ export const mxSpacePlugin: LinkCardPlugin = {
       data = await apiClient.post.getPost(cate, slug)
     } else if (type === 'notes') {
       const [nid] = rest
-      const response = await apiClient.note.getNoteById(+nid)
-      data = response.data
+      data = await apiClient.note.getNoteByNid(Number.parseInt(nid, 10))
     }
 
-    const coverImage = data.cover || data.meta?.cover
+    const coverImage = data.meta?.cover
     let spotlightColor = ''
 
     if (coverImage) {

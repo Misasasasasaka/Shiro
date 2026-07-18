@@ -61,7 +61,7 @@ const PostBox = () => {
   const { mutateAsync: handleSend, isPending } = useMutation({
     mutationFn: async () => {
       apiClient.shorthand.proxy
-        .post({ data: { content: value } })
+        .post<RecentlyModel>({ data: { content: value } })
         .then((res) => {
           setValue('')
 
@@ -73,7 +73,7 @@ const PostBox = () => {
             >
           >(QUERY_KEY, (old) =>
             produce(old, (draft) => {
-              draft?.pages[0].unshift(res.$serialized as any)
+              draft?.pages[0].unshift(res.$serialized)
               return draft
             }),
           )
@@ -118,10 +118,11 @@ const List = () => {
   const { data, isLoading, fetchNextPage } = useInfiniteQuery({
     queryKey: QUERY_KEY,
     queryFn: async ({ pageParam }) => {
-      const { data } = await apiClient.shorthand.getList({
+      const response = await apiClient.shorthand.getList({
         before: pageParam,
         size: FETCH_SIZE,
       })
+      const data = response.$serialized
 
       if (data.length < FETCH_SIZE) {
         setHasNext(false)

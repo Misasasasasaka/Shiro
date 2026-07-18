@@ -23,8 +23,10 @@ import { useCallback, useMemo } from 'react'
 
 import { getWebUrl } from '~/atoms'
 import { useModalStack } from '~/components/ui/modal/stacked/provider'
+import { API_URL } from '~/constants/env'
 import { useIsDark } from '~/hooks/common/use-is-dark'
 import { fetchGitHubApi } from '~/lib/github'
+import { normalizeLexicalContent } from '~/lib/lexical-content'
 
 const fallbackSansFont =
   "var(--app-font-sans, system-ui), -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Roboto, Helvetica, 'noto sans sc', 'hiragino sans gb', sans-serif, Apple Color Emoji, Segoe UI Emoji, Not Color Emoji"
@@ -84,7 +86,9 @@ const linkCardFetchContext: LinkCardFetchContext = {
     },
     'mx-space': {
       request: async (path) => {
-        const r = await fetch(`/api/v2/${path}`)
+        const r = await fetch(
+          `${API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`,
+        )
         return await r.json()
       },
     },
@@ -117,7 +121,7 @@ export function LexicalContent({
 }: LexicalContentProps) {
   const editorState = useMemo<SerializedEditorState | null>(() => {
     try {
-      return JSON.parse(content)
+      return normalizeLexicalContent(JSON.parse(content))
     } catch {
       return null
     }
