@@ -54,6 +54,27 @@ describe('locale proxy', () => {
     expect(response.headers.get('location')).toBe('http://localhost:2323/posts')
   })
 
+  it('does not redirect an internal default-locale rewrite back to itself', async () => {
+    const response = await proxy(
+      new NextRequest('http://localhost:2323/zh/posts', {
+        headers: {
+          request_pathname: '/posts',
+          'x-next-intl-locale': 'zh',
+        },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull()
+    expect(response.headers.get('x-middleware-request-request_pathname')).toBe(
+      '/posts',
+    )
+    expect(response.headers.get('x-middleware-request-request_locale')).toBe(
+      'zh',
+    )
+  })
+
   it('does not mistake the OG route for an unsupported locale', async () => {
     const response = await proxy(
       new NextRequest('http://localhost:2323/og?data=fixture'),

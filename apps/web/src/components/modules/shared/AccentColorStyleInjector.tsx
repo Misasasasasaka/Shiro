@@ -1,4 +1,5 @@
 import { generateAccentColorStyle } from '~/lib/accent-color'
+import { createPngNoiseBackground } from '~/lib/noise'
 
 const accentColorLight = [
   // 浅葱
@@ -42,6 +43,10 @@ export async function AccentColorStyleInjector({
     },
     useThemedClass: false,
   })
+  const [lightNoiseBackground, darkNoiseBackground] = await Promise.all([
+    createPngNoiseBackground(currentAccentColorLRef),
+    createPngNoiseBackground(currentAccentColorDRef),
+  ])
 
   return (
     <style
@@ -49,7 +54,13 @@ export async function AccentColorStyleInjector({
       data-light={currentAccentColorLRef}
       data-dark={currentAccentColorDRef}
       dangerouslySetInnerHTML={{
-        __html: cssContent,
+        __html: `${cssContent}
+        html[data-theme='light'].noise body::before {
+          background-image: ${lightNoiseBackground};
+        }
+        html[data-theme='dark'].noise body::before {
+          background-image: ${darkNoiseBackground};
+        }`,
       }}
     />
   )

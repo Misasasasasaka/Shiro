@@ -152,11 +152,20 @@ export async function proxy(req: NextRequest) {
   }
 
   const requestHeaders = new Headers(req.headers)
-  requestHeaders.set(REQUEST_PATHNAME, pathname)
-  requestHeaders.set(REQUEST_QUERY, search)
-  requestHeaders.set(REQUEST_GEO, geo?.country || 'unknown')
-  requestHeaders.set(REQUEST_IP, ip || '')
-  requestHeaders.set(REQUEST_HOST, headers.get('host') || '')
+  requestHeaders.set(
+    REQUEST_PATHNAME,
+    requestHeaders.get(REQUEST_PATHNAME) ?? pathname,
+  )
+  requestHeaders.set(REQUEST_QUERY, requestHeaders.get(REQUEST_QUERY) ?? search)
+  requestHeaders.set(
+    REQUEST_GEO,
+    requestHeaders.get(REQUEST_GEO) ?? geo?.country ?? 'unknown',
+  )
+  requestHeaders.set(REQUEST_IP, requestHeaders.get(REQUEST_IP) ?? ip ?? '')
+  requestHeaders.set(
+    REQUEST_HOST,
+    requestHeaders.get(REQUEST_HOST) ?? headers.get('host') ?? '',
+  )
 
   const { searchParams } = req.nextUrl
 
@@ -184,6 +193,27 @@ export async function proxy(req: NextRequest) {
       const clonedUrl = req.nextUrl.clone()
       clonedUrl.pathname = newPathname || '/'
       return NextResponse.redirect(clonedUrl)
+    }
+
+    // Next.js 16 can run proxy.ts again for next-intl's internal rewrite from
+    // an unprefixed default-locale URL (for example `/` -> `/zh`). Letting
+    // next-intl process that internal `/zh` request again redirects it back to
+    // `/`, creating a rewrite/redirect loop.
+    const forwardedLocale = normalizeLocale(
+      req.headers.get(NEXT_INTL_LOCALE_HEADER),
+    )
+    const isInternalDefaultLocaleRewrite =
+      req.headers.has(REQUEST_PATHNAME) &&
+      forwardedLocale === defaultLocale &&
+      getLocaleFromPathname(pathname) === defaultLocale
+
+    if (isInternalDefaultLocaleRewrite) {
+      requestHeaders.set(REQUEST_LOCALE, defaultLocale)
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
     }
 
     const intlResponse = intlMiddleware(req)
