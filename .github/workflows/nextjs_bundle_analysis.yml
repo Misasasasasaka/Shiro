@@ -72,7 +72,7 @@ jobs:
 
       - name: Compare with base branch bundle
         if: success() && github.event.number && steps.download-base-bundle.outcome == 'success'
-        run: ls -laR apps/web/.next/analyze/base && npx -p nextjs-bundle-analysis compare
+        run: ls -laR .next/analyze/base && npx -p nextjs-bundle-analysis compare
 
       - name: Upload analysis
         if: success() && github.event.number && steps.download-base-bundle.outcome == 'success'
@@ -90,4 +90,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pr
-          path: ./pr-id.txt
+          path: apps/web/pr-id.txt

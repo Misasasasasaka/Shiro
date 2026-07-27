@@ -1,10 +1,16 @@
 'use client'
 
+import Cookies from 'js-cookie'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useMemo } from 'react'
 
 import type { Locale } from '~/i18n/config'
 import { locales } from '~/i18n/config'
+import {
+  isLocalePreference,
+  localeCookie,
+  localeCookieClientOptions,
+} from '~/i18n/locale-cookie'
 import { usePathname, useRouter } from '~/i18n/navigation'
 
 import { LanguageSelector } from '../../ui/language-selector'
@@ -35,7 +41,10 @@ export const LocaleSwitcher = () => {
 
   const handleLocaleChange = useCallback(
     (newLocale: string) => {
-      router.push(pathname, { locale: newLocale })
+      if (!isLocalePreference(newLocale)) return
+
+      Cookies.set(localeCookie.name, newLocale, localeCookieClientOptions)
+      router.replace(pathname, { locale: newLocale })
     },
     [pathname, router],
   )

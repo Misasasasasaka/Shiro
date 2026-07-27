@@ -3,7 +3,6 @@ import 'server-only'
 import chroma from 'chroma-js'
 import Color from 'colorjs.io'
 
-
 /**
  * 将十六进制颜色转换为OKLCH字符串
  */
@@ -77,17 +76,21 @@ export async function generateAccentColorStyle(
     cssContent += `
         html.themed[data-theme='light'] {
           --footer-bg: ${lightRootBg};
+          --color-root-bg: ${lightRootBg};
         }
         html.themed[data-theme='dark'] {
           --footer-bg: ${darkRootBg};
+          --color-root-bg: ${darkRootBg};
         }`
   } else {
     cssContent += `
         :root[data-theme='light'] {
           --footer-bg: ${lightRootBg};
+          --color-root-bg: ${lightRootBg};
         }
         :root[data-theme='dark'] {
           --footer-bg: ${darkRootBg};
+          --color-root-bg: ${darkRootBg};
         }`
   }
 

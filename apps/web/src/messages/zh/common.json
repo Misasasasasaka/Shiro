@@ -49,16 +49,7 @@
   "login_secret_entrance": "你发现了神秘的登录入口",
   "login_nothing_here": "，但这里什么也没有",
   "login_button": "登录",
-  "loading_default": [
-    "稍候片刻，月出文自明。",
-    "风过空庭，字句正徐来。",
-    "纸白微明，未成篇章。",
-    "夜退星沉，此页初醒。",
-    "墨痕未定，片语已生春。",
-    "云开一隙，文章将至。",
-    "万籁俱寂，万字将成。",
-    "且听风定，再看句成。"
-  ],
+  "loading_default": "别着急，坐和放宽",
   "loading_video": "视频加载中...",
   "loading_bilibili": "哔哩哔哩视频加载中...",
   "loading_failed": "加载失败",
