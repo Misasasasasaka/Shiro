@@ -18,7 +18,7 @@ html.noise body::before {
   inset: 0;
   content: '';
   pointer-events: none;
-  opacity: 0.08;
+  opacity: 0.05;
   background-repeat: repeat;
 }
 
