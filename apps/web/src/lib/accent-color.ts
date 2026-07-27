@@ -43,7 +43,7 @@ export async function generateAccentColorStyle(
   const {
     colors,
     useThemedClass = false,
-    mixRatio = { light: 0.05, dark: 0.12 },
+    mixRatio = { light: 0.1, dark: 0.16 },
   } = config
 
   const lightOklch = hexToOklchString(colors.light)

@@ -1,14 +1,43 @@
+html.noise {
+  background-image:
+    radial-gradient(
+      circle at 8% -8%,
+      color-mix(in srgb, var(--color-accent) 12%, transparent) 0,
+      transparent 44%
+    ),
+    radial-gradient(
+      circle at 96% 14%,
+      color-mix(in srgb, var(--color-accent) 6%, transparent) 0,
+      transparent 38%
+    );
+  background-attachment: fixed;
+}
+
 html.noise body::before {
   position: fixed;
   inset: 0;
   content: '';
-  opacity: 0.04;
+  pointer-events: none;
+  opacity: 0.08;
   background-repeat: repeat;
-  /* filter: blur(3px); */
+}
+
+html[data-theme='dark'].noise {
+  background-image:
+    radial-gradient(
+      circle at 8% -8%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent) 0,
+      transparent 44%
+    ),
+    radial-gradient(
+      circle at 96% 14%,
+      color-mix(in srgb, var(--color-accent) 4%, transparent) 0,
+      transparent 38%
+    );
 }
 
 html[data-theme='dark'].noise body::before {
-  opacity: 0.01;
+  opacity: 0.03;
 }
 
 @media print {
