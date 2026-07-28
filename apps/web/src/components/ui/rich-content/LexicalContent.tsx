@@ -164,7 +164,7 @@ export function LexicalContent({
         typography: {
           fontFamily:
             variant === 'note'
-              ? `var(--note-font-override, ${fallbackSerifFont})`
+              ? `var(--note-font-override, ${fallbackSansFont})`
               : fallbackSansFont,
           fontFamilySerif: fallbackSerifFont,
           fontMono: fallbackMonoFont,

@@ -124,7 +124,7 @@ export const generateMetadata = async (props: {
 const PostPage = ({ data }: { data: PostWithTranslation }) => {
   const { id } = data
   return (
-    <div className="relative w-full min-w-0">
+    <div className="content-paper relative w-full min-w-0 px-5 py-8 sm:px-7 md:px-10 lg:px-12 lg:py-11">
       <AckRead id={id} type="post" />
       <div>
         <div className="mb-8">
@@ -146,7 +146,10 @@ const PostPage = ({ data }: { data: PostWithTranslation }) => {
           <PostMarkdownImageRecordProvider>
             <MarkdownSelection>
               <article
-                className={clsx(data.contentFormat !== 'lexical' && 'prose')}
+                className={clsx(
+                  'content-article',
+                  data.contentFormat !== 'lexical' && 'prose',
+                )}
               >
                 <div className="sr-only">
                   <PostTitle />

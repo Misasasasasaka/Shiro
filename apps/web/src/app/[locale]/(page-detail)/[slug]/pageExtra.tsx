@@ -62,7 +62,9 @@ export const PageTitle = () => {
   const id = useCurrentPageDataSelector((data) => data?.id)
   return (
     <>
-      <h1 className="text-balance text-center lg:text-left">{title}</h1>
+      <h1 className="text-balance text-center font-serif font-medium lg:text-left">
+        {title}
+      </h1>
       {id && (
         <GoToAdminEditingButton
           id={id}
