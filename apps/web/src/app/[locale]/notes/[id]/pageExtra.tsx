@@ -47,7 +47,7 @@ export const NoteTitle = () => {
   if (!title) return null
   return (
     <div className="relative">
-      <h1 className="my-8 text-balance text-left text-4xl font-bold leading-tight text-base-content/95">
+      <h1 className="my-8 text-balance text-left font-serif text-4xl font-medium leading-tight text-[var(--content-heading)]">
         {title}
       </h1>
 
@@ -134,7 +134,9 @@ export const IndentArticleContainer = ({
 }: PropsWithChildren<{
   prose?: boolean
 }>) => (
-  <article className={clsx('relative', prose && 'prose')}>{children}</article>
+  <article className={clsx('content-article relative', prose && 'prose')}>
+    {children}
+  </article>
 )
 
 export const NoteDataReValidate: FC<{ fetchedAt: string }> = withClientOnly(

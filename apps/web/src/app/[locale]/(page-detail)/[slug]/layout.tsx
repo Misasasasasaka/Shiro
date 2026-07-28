@@ -82,10 +82,13 @@ export default definePrerenderPage<PageParams>()({
       <ArticleRoomSubscriber id={data.id} />
       <div className="relative flex min-h-[120px] w-full">
         <PageLoading>
-          <div className="relative w-full min-w-0">
+          <div className="content-paper relative w-full min-w-0 px-5 py-8 sm:px-7 md:px-10 lg:px-12 lg:py-11">
             <WrappedElementProvider eoaDetect>
               <article
-                className={clsx(data.contentFormat !== 'lexical' && 'prose')}
+                className={clsx(
+                  'content-article',
+                  data.contentFormat !== 'lexical' && 'prose',
+                )}
               >
                 <header className="mb-8">
                   <BottomToUpSoftScaleTransitionView lcpOptimization delay={0}>

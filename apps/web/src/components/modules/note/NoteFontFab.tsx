@@ -14,7 +14,7 @@ import { Noop } from '~/lib/noop'
 import { jotaiStore } from '~/lib/store'
 
 type Font = 'serif' | 'sans' | 'youzai' | 'lxgw'
-const fontAtom = atomWithStorage<Font>('note-font', 'serif')
+const fontAtom = atomWithStorage<Font>('note-font', 'sans')
 
 export const NoteFontSettingFab = () => (
   <>
@@ -51,6 +51,9 @@ export const NoteFontSettingFab = () => (
 )
 
 const FONT_CONFIG = {
+  serif: {
+    fontFamily: `var(--font-serif), serif`,
+  },
   youzai: {
     stylesheetUrl:
       'https://fastly.jsdelivr.net/gh/Innei/static@master/fonts/yozai/stylesheet.css',

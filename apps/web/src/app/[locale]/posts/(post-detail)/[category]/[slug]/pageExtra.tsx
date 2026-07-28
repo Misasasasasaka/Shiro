@@ -56,7 +56,7 @@ export const PostTitle = () => {
   const title = useCurrentPostDataSelector((data) => data?.title)!
 
   return (
-    <h1 className="mb-8 text-balance text-center text-4xl font-bold leading-tight">
+    <h1 className="mb-8 text-balance text-center font-serif text-4xl font-medium leading-tight text-[var(--content-heading)]">
       {title}
     </h1>
   )

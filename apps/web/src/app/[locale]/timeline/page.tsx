@@ -11,6 +11,7 @@ import { memo, useEffect } from 'react'
 
 import { SolidBookmark } from '~/components/icons/bookmark'
 import { NormalContainer } from '~/components/layout/container/Normal'
+import { NoteLockIndicator } from '~/components/modules/note/NoteLockIndicator'
 import { PeekLink } from '~/components/modules/peek/PeekLink'
 import { TimelineProgress } from '~/components/modules/timeline/TimelineProgress'
 import { Divider } from '~/components/ui/divider'
@@ -34,6 +35,15 @@ type MapType = {
   type: ArticleType
   id: string
   important?: boolean
+  locked?: boolean
+}
+
+type TimelineDataWithProtectedNotes = Omit<TimelineData, 'notes'> & {
+  notes?: Array<
+    NonNullable<TimelineData['notes']>[number] & {
+      hasPassword?: boolean
+    }
+  >
 }
 
 const useJumpTo = () => {
@@ -91,11 +101,11 @@ export default function TimelinePage() {
     note: TimelineType.Note,
   }[type]
 
-  const { data: initialData } = useQuery<TimelineData>({
+  const { data: initialData } = useQuery<TimelineDataWithProtectedNotes>({
     queryKey: ['timeline'],
     enabled: false,
   })
-  const { data, refetch } = useQuery<TimelineData>({
+  const { data, refetch } = useQuery<TimelineDataWithProtectedNotes>({
     queryKey: ['timeline', nextType, year],
     initialData,
     queryFn: async ({ queryKey }) => {
@@ -105,7 +115,7 @@ export default function TimelinePage() {
           type: nextType,
           year: +(year || 0) || undefined,
         })
-        .then((res) => res.$serialized)
+        .then((res) => res.$serialized as TimelineDataWithProtectedNotes)
     },
   })
 
@@ -164,6 +174,7 @@ export default function TimelinePage() {
         type: ArticleType.Note,
         id: note.id,
         important: note.bookmark,
+        locked: note.hasPassword,
       }
 
       sortedMap.set(
@@ -247,6 +258,7 @@ const Item = memo<{
         <PeekLink href={item.href} className="min-w-0 truncate leading-6">
           <span className="min-w-0 truncate">{item.title}</span>
         </PeekLink>
+        {item.locked && <NoteLockIndicator className="ml-1 size-3.5" />}
         {item.important && (
           <SolidBookmark
             className="ml-2 cursor-pointer text-red-500"
