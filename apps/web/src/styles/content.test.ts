@@ -7,6 +7,10 @@ const noteFontSource = readFileSync(
   new URL('../components/modules/note/NoteFontFab.tsx', import.meta.url),
   'utf8',
 )
+const postContainerSource = readFileSync(
+  new URL('../app/[locale]/posts/(post-detail)/Container.tsx', import.meta.url),
+  'utf8',
+)
 
 describe('content reading surface', () => {
   it('uses a warm paper surface with restrained depth', () => {
@@ -23,5 +27,10 @@ describe('content reading surface', () => {
     expect(noteFontSource).toContain(
       "atomWithStorage<Font>('note-font', 'sans')",
     )
+  })
+
+  it('centers the post column independently from its right-side rail', () => {
+    expect(postContainerSource).toContain('xl:max-w-[1480px]')
+    expect(postContainerSource).toContain('xl:pl-[200px]')
   })
 })
