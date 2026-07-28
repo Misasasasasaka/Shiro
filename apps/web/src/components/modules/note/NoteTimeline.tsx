@@ -13,6 +13,10 @@ import { useCurrentNoteNid } from '~/providers/note/CurrentNoteIdProvider'
 
 import { NoteTimelineItem } from './NoteTimelineItem'
 
+type ProtectedNoteTimelineItem = NoteTimelineItemData & {
+  hasPassword?: boolean
+}
+
 export const NoteTimeline = memo(() => {
   const noteId = useCurrentNoteNid()
   if (!noteId) return null
@@ -36,6 +40,7 @@ const NoteTimelineImpl = () => {
       title: note.title,
       createdAt: note.createdAt,
       isPublished: note.isPublished,
+      hasPassword: note.hasPassword,
     }
   })
   const noteNid = useCurrentNoteNid()
@@ -48,7 +53,7 @@ const NoteTimelineImpl = () => {
       const [, noteId, lang] = queryKey
       if (!noteId) throw ''
       const data = await apiClient.note.proxy.list(noteId).get<{
-        data: NoteTimelineItemData[]
+        data: ProtectedNoteTimelineItem[]
         size: number
       }>({
         params: { size: 10, lang },
@@ -67,6 +72,7 @@ const NoteTimelineImpl = () => {
           id: note.id,
           createdAt: note.createdAt,
           isPublished: note.isPublished,
+          hasPassword: note.hasPassword,
         },
       ]
     : []
@@ -83,6 +89,7 @@ const NoteTimelineImpl = () => {
               active={isCurrent}
               title={item.title}
               nid={item.nid}
+              hasPassword={item.hasPassword}
             />
           )
         })}

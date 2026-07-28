@@ -3,6 +3,7 @@
 import { m } from 'motion/react'
 import { useTranslations } from 'next-intl'
 
+import { NoteLockIndicator } from '~/components/modules/note/NoteLockIndicator'
 import { Divider } from '~/components/ui/divider'
 import { RelativeTime } from '~/components/ui/relative-time'
 import { Spring } from '~/constants/spring'
@@ -66,12 +67,13 @@ export const ActivityPostList = () => {
         {notes.map((note) => (
           <li key={note.id} className="flex min-w-0 justify-between">
             <Link
-              className="min-w-0 shrink truncate"
+              className="flex min-w-0 shrink items-center gap-1"
               href={routeBuilder(Routes.Note, {
                 id: note.nid,
               })}
             >
-              {note.title}
+              <span className="min-w-0 truncate">{note.title}</span>
+              {note.hasPassword && <NoteLockIndicator className="size-3.5" />}
             </Link>
 
             <span className="ml-2 shrink-0 self-end text-xs opacity-70">

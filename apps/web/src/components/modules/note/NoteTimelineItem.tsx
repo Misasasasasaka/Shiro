@@ -11,6 +11,8 @@ import { clsxm } from '~/lib/helper'
 import { routeBuilder, Routes } from '~/lib/route-builder'
 import { springScrollToTop } from '~/lib/scroller'
 
+import { NoteLockIndicator } from './NoteLockIndicator'
+
 const styles = tv({
   base: 'text-neutral min-w-0 truncate text-left opacity-50 transition-all tabular-nums hover:opacity-80',
   variants: {
@@ -30,10 +32,11 @@ export const NoteTimelineItem = memo<{
   active: boolean
   title: string
   nid: number
+  hasPassword?: boolean
 
   layout?: boolean
 }>((props) => {
-  const { active, nid, title, layout } = props
+  const { active, hasPassword, nid, title, layout } = props
   const href = routeBuilder(Routes.Note, {
     id: nid,
   })
@@ -65,7 +68,10 @@ export const NoteTimelineItem = memo<{
         )}
         href={href}
       >
-        {title}
+        <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+          <span className="min-w-0 truncate">{title}</span>
+          {hasPassword && <NoteLockIndicator className="size-3.5" />}
+        </span>
       </Link>
     </m.li>
   )

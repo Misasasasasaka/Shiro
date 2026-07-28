@@ -3,9 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 
 export const queryKey = ['home']
 
+type AggregateTopWithProtectedNotes = Omit<AggregateTop, 'notes'> & {
+  notes: Array<
+    AggregateTop['notes'][number] & {
+      hasPassword?: boolean
+    }
+  >
+}
+
 export const useHomeQueryData = () =>
   useQuery({
     queryKey,
-    queryFn: async () => null! as AggregateTop,
+    queryFn: async () => null! as AggregateTopWithProtectedNotes,
     enabled: false,
   }).data!
