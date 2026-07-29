@@ -206,7 +206,7 @@ export default definePrerenderPage<NoteDetailPageParams>()<NoteDataResult>({
 
     if (status === 403) {
       return (
-        <Paper>
+        <Paper mobileInset>
           <NotePasswordForm />
           <CurrentNoteNidProvider nid={id} />
         </Paper>
@@ -235,7 +235,7 @@ export default definePrerenderPage<NoteDetailPageParams>()<NoteDataResult>({
         <NoteDataReValidate fetchedAt={fetchedAt} />
         <SyncNoteDataAfterLoggedIn />
         <Transition className="min-w-0" lcpOptimization>
-          <Paper key={nid} as={NoteMainContainer}>
+          <Paper key={nid} as={NoteMainContainer} mobileInset>
             <PageInner
               data={data}
               privateLoginOnlyMessage={t('private_login_only')}
