@@ -11,6 +11,14 @@ const postContainerSource = readFileSync(
   new URL('../app/[locale]/posts/(post-detail)/Container.tsx', import.meta.url),
   'utf8',
 )
+const notePaperSource = readFileSync(
+  new URL('../components/layout/container/Paper.tsx', import.meta.url),
+  'utf8',
+)
+const notePageSource = readFileSync(
+  new URL('../app/[locale]/notes/[id]/page.tsx', import.meta.url),
+  'utf8',
+)
 
 describe('content reading surface', () => {
   it('uses a warm paper surface with restrained depth', () => {
@@ -32,5 +40,10 @@ describe('content reading surface', () => {
   it('centers the post column independently from its right-side rail', () => {
     expect(postContainerSource).toContain('xl:max-w-[1480px]')
     expect(postContainerSource).toContain('xl:pl-[200px]')
+  })
+
+  it('matches post paper gutters on mobile note detail pages', () => {
+    expect(notePaperSource).toContain('mx-2 px-5 py-8 md:m-0 md:p-[2rem_1rem]')
+    expect(notePageSource.match(/\bmobileInset\b/g)).toHaveLength(2)
   })
 })
