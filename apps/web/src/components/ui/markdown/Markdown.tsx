@@ -286,6 +286,7 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
                   content={node.text}
                   lang={node.lang}
                   attrs={node?.rawAttrs}
+                  allowExcalidraw={variant !== 'comment'}
                 />
               )
             },
@@ -330,6 +331,7 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
       extendsRules,
       renderers,
       rest,
+      variant,
       MHeader,
     ])
 
