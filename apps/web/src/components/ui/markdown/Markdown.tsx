@@ -24,6 +24,7 @@ import { springScrollToElement } from '~/lib/scroller'
 import { Gallery } from '../gallery'
 import { MarkdownLink } from '../link/MarkdownLink'
 import { LinkCard, LinkCardSource } from '../link-card'
+import { isContainerRuleEnabled } from './markdown-policy'
 import { ContainerRule } from './parsers/container'
 import { InsertRule } from './parsers/ins'
 import { KateXBlockRule, KateXRule } from './parsers/katex'
@@ -315,7 +316,11 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
           ins: InsertRule,
           kateX: KateXRule,
           kateXBlock: KateXBlockRule,
-          container: ContainerRule,
+          // Containers recursively render their contents with the trusted markdown
+          // configuration. Do not expose them to untrusted comment content.
+          ...(isContainerRuleEnabled(variant)
+            ? { container: ContainerRule }
+            : {}),
           ...extendsRules,
         },
         ...rest,
@@ -326,6 +331,7 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
       value,
       props.children,
       allowsScript,
+      variant,
       overrides,
       extendsRules,
       renderers,
