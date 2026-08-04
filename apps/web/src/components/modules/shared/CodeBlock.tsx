@@ -58,9 +58,15 @@ export const CodeBlockRender = (props: {
   content: string
 
   attrs?: string
+  allowComponent?: boolean
 }) => {
   const Content = useMemo(() => {
-    switch (props.lang) {
+    const renderLang =
+      props.lang === 'component' && props.allowComponent === false
+        ? undefined
+        : props.lang
+
+    switch (renderLang) {
       case 'mermaid': {
         const Mermaid =
           mermaidImport ??

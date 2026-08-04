@@ -10,7 +10,15 @@ import { compiler, RuleType, sanitizer } from 'markdown-to-jsx'
 import Script from 'next/script'
 import type * as React from 'react'
 import type { FC, PropsWithChildren } from 'react'
-import { Fragment, memo, Suspense, useCallback, useMemo } from 'react'
+import {
+  createContext,
+  Fragment,
+  memo,
+  Suspense,
+  use,
+  useCallback,
+  useMemo,
+} from 'react'
 
 import { setMainMarkdownElement } from '~/atoms/hooks/reading'
 import { ErrorBoundary } from '~/components/common/ErrorBoundary'
@@ -50,6 +58,8 @@ import { getFootNoteDomId, getFootNoteRefDomId } from './utils/get-id'
 import { redHighlight } from './utils/redHighlight'
 
 export type MarkdownVariant = 'post' | 'note' | 'comment'
+
+const RemoteComponentContext = createContext(true)
 
 export interface MdProps {
   value?: string
@@ -103,6 +113,9 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
 
       ...rest
     } = props
+
+    const allowsRemoteComponents =
+      use(RemoteComponentContext) && variant !== 'comment'
 
     const MHeader = useMemo(() => createMarkdownHeadingComponent(), [])
 
@@ -286,6 +299,7 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
                   content={node.text}
                   lang={node.lang}
                   attrs={node?.rawAttrs}
+                  allowComponent={allowsRemoteComponents}
                 />
               )
             },
@@ -331,28 +345,36 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
       renderers,
       rest,
       MHeader,
+      allowsRemoteComponents,
     ])
 
-    if (removeWrapper) return <Suspense>{node}</Suspense>
+    if (removeWrapper)
+      return (
+        <RemoteComponentContext value={allowsRemoteComponents}>
+          <Suspense>{node}</Suspense>
+        </RemoteComponentContext>
+      )
 
     return (
-      <ErrorBoundary>
-        <Suspense>
-          <As
-            style={style}
-            {...wrapperProps}
-            ref={wrapperRef as any}
-            className={clsx(
-              'markdown',
-              codeBlockFully ? 'markdown--code-fully' : undefined,
-              variant !== 'post' && `markdown--${variant}`,
-              className,
-            )}
-          >
-            {node}
-          </As>
-        </Suspense>
-      </ErrorBoundary>
+      <RemoteComponentContext value={allowsRemoteComponents}>
+        <ErrorBoundary>
+          <Suspense>
+            <As
+              style={style}
+              {...wrapperProps}
+              ref={wrapperRef as any}
+              className={clsx(
+                'markdown',
+                codeBlockFully ? 'markdown--code-fully' : undefined,
+                variant !== 'post' && `markdown--${variant}`,
+                className,
+              )}
+            >
+              {node}
+            </As>
+          </Suspense>
+        </ErrorBoundary>
+      </RemoteComponentContext>
     )
   })
 Markdown.displayName = 'Markdown'
