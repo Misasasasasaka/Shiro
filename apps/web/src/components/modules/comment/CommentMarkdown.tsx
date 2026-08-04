@@ -1,5 +1,6 @@
 import type { FC } from 'react'
 
+import { PrismHighLighter } from '~/components/ui/code-highlighter'
 import { Markdown, RuleType } from '~/components/ui/markdown'
 import { useTypeScriptHappyCallback } from '~/hooks/common/use-callback'
 
@@ -12,6 +13,24 @@ const disabledTypes = [
   RuleType.htmlSelfClosing,
   RuleType.htmlBlock,
 ]
+
+const commentRenderers = {
+  [RuleType.codeBlock]: {
+    render(
+      node: { lang?: string; text: string },
+      _output: unknown,
+      state: any,
+    ) {
+      return (
+        <PrismHighLighter
+          key={state?.key}
+          content={node.text}
+          lang={node.lang}
+        />
+      )
+    },
+  },
+}
 
 export const CommentMarkdown: FC<{
   children: string
@@ -30,6 +49,7 @@ export const CommentMarkdown: FC<{
         disableParsingRawHTML
         forceBlock
         disabledTypes={disabledTypes}
+        renderers={commentRenderers}
         value={children}
         variant="comment"
       />
