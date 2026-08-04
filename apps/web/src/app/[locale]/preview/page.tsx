@@ -121,6 +121,8 @@ export default function PreviewPage() {
     targetOrigin = decodeURIComponent(targetOrigin)
 
     const handler = (e: MessageEvent) => {
+      if (e.origin !== targetOrigin) return
+
       const parsedData = safeParse(e.data)
 
       if (!parsedData) return
