@@ -7,6 +7,7 @@ import { useIsomorphicLayoutEffect } from 'foxact/use-isomorphic-layout-effect'
 import { atom, useAtomValue } from 'jotai'
 import { useMemo } from 'react'
 
+import { useAppUrl } from '~/atoms/hooks/url'
 import { ErrorBoundary } from '~/components/common/ErrorBoundary'
 import { Paper } from '~/components/layout/container/Paper'
 import { NoteMetaBar, NoteRootBanner } from '~/components/modules/note'
@@ -62,6 +63,8 @@ const safeParse = (value: string) => {
 }
 const previewDataAtom = atom<PostModel | NoteModel | PageModel | null>(null)
 export default function PreviewPage() {
+  const { adminUrl } = useAppUrl()
+
   // handle preview by storage observer
   useIsomorphicLayoutEffect(() => {
     const { search } = location
@@ -107,20 +110,25 @@ export default function PreviewPage() {
     const { search } = location
     const searchParams = new URLSearchParams(search)
 
-    let targetOrigin = searchParams.get('origin')
-
-    // const isInIframe = window.self !== window.top
-
-    // if (isInIframe) {
-    //   return
-    // }
-
-    if (!targetOrigin) {
+    const requestedOrigin = searchParams.get('origin')
+    if (!requestedOrigin || !adminUrl) {
       return
     }
-    targetOrigin = decodeURIComponent(targetOrigin)
+
+    let targetOrigin: string
+    try {
+      targetOrigin = new URL(requestedOrigin).origin
+      if (targetOrigin !== new URL(adminUrl).origin) return
+    } catch {
+      return
+    }
+
+    const parentWindow = window.opener || window.parent
+    if (parentWindow === window) return
 
     const handler = (e: MessageEvent) => {
+      if (e.source !== parentWindow || e.origin !== targetOrigin) return
+
       const parsedData = safeParse(e.data)
 
       if (!parsedData) return
@@ -144,7 +152,6 @@ export default function PreviewPage() {
     window.addEventListener('message', handler)
 
     console.info('preview page ready')
-    const parentWindow = window.opener || window.parent
     parentWindow.postMessage('ok', targetOrigin)
 
     const timer = setInterval(() => {
@@ -154,7 +161,7 @@ export default function PreviewPage() {
       window.removeEventListener('message', handler)
       clearInterval(timer)
     }
-  }, [])
+  }, [adminUrl])
 
   const previewData = useAtomValue(previewDataAtom)
 
