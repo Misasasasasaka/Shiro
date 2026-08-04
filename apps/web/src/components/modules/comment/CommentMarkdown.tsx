@@ -30,6 +30,7 @@ export const CommentMarkdown: FC<{
         disableParsingRawHTML
         forceBlock
         disabledTypes={disabledTypes}
+        trustLevel="untrusted"
         value={children}
         variant="comment"
       />
