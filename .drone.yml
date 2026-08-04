@@ -11,10 +11,6 @@ volumes:
   - name: shiro-dist
     host:
       path: /drone/tmp/shiro-dist
-  - name: shiro-env
-    host:
-      path: /home/innei/docker-compose/drone/public/shiro/.env
-
   - name: node_modules_cache
     host:
       path: /drone/tmp/cache
@@ -38,6 +34,14 @@ steps:
     environment:
       NODE_OPTIONS: --max_old_space_size=4096
       NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_API_URL:
+        from_secret: next_public_api_url
+      NEXT_PUBLIC_CLIENT_API_URL:
+        from_secret: next_public_client_api_url
+      NEXT_PUBLIC_GATEWAY_URL:
+        from_secret: next_public_gateway_url
+      ASSETPREFIX:
+        from_secret: assetprefix
     commands:
       - 'corepack enable'
       - 'corepack prepare pnpm@10.27.0 --activate'
@@ -47,8 +51,6 @@ steps:
     depends_on:
       - restore-cache
     volumes:
-      - name: shiro-env
-        path: /drone/src/apps/web/.env
       - name: cache
         path: /drone/src/apps/web/.next
 
