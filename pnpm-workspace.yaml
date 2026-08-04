@@ -10,6 +10,7 @@ onlyBuiltDependencies:
   - 'simple-git-hooks'
 
 overrides:
+  '@excalidraw/excalidraw': '0.17.6'
   '@types/react': '19.2.9'
   '@types/react-dom': '19.2.3'
   'array-includes': 'npm:@nolyfill/array-includes@^1.0.44'

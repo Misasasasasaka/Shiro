@@ -7,6 +7,7 @@ import { useIsomorphicLayoutEffect } from 'foxact/use-isomorphic-layout-effect'
 import { atom, useAtomValue } from 'jotai'
 import { useMemo } from 'react'
 
+import { useAppUrl } from '~/atoms/hooks/url'
 import { ErrorBoundary } from '~/components/common/ErrorBoundary'
 import { Paper } from '~/components/layout/container/Paper'
 import { NoteMetaBar, NoteRootBanner } from '~/components/modules/note'
@@ -52,6 +53,10 @@ import {
   PostMetaBarInternal,
 } from '../posts/(post-detail)/[category]/[slug]/pageExtra'
 import { PostMarkdown } from '../posts/(post-detail)/[category]/[slug]/PostMarkdown'
+import {
+  getTrustedPreviewOrigin,
+  isTrustedPreviewMessage,
+} from './message-security'
 
 const safeParse = (value: string) => {
   try {
@@ -62,6 +67,8 @@ const safeParse = (value: string) => {
 }
 const previewDataAtom = atom<PostModel | NoteModel | PageModel | null>(null)
 export default function PreviewPage() {
+  const { adminUrl } = useAppUrl()
+
   // handle preview by storage observer
   useIsomorphicLayoutEffect(() => {
     const { search } = location
@@ -107,27 +114,23 @@ export default function PreviewPage() {
     const { search } = location
     const searchParams = new URLSearchParams(search)
 
-    let targetOrigin = searchParams.get('origin')
+    const targetOrigin = getTrustedPreviewOrigin(
+      searchParams.get('origin'),
+      adminUrl,
+    )
+    const previewKey = searchParams.get('key')
+    if (!targetOrigin || !previewKey) return
 
-    // const isInIframe = window.self !== window.top
-
-    // if (isInIframe) {
-    //   return
-    // }
-
-    if (!targetOrigin) {
-      return
-    }
-    targetOrigin = decodeURIComponent(targetOrigin)
+    const parentWindow = window.opener || window.parent
+    if (parentWindow === window) return
 
     const handler = (e: MessageEvent) => {
+      if (!isTrustedPreviewMessage(e, targetOrigin, parentWindow)) return
+
       const parsedData = safeParse(e.data)
 
       if (!parsedData) return
-      const PREVIEW_HASH = new URLSearchParams(location.search).get('key')
-
-      if (!PREVIEW_HASH) return
-      if (parsedData.key !== PREVIEW_HASH) {
+      if (parsedData.key !== previewKey) {
         return
       }
 
@@ -144,7 +147,6 @@ export default function PreviewPage() {
     window.addEventListener('message', handler)
 
     console.info('preview page ready')
-    const parentWindow = window.opener || window.parent
     parentWindow.postMessage('ok', targetOrigin)
 
     const timer = setInterval(() => {
@@ -154,7 +156,7 @@ export default function PreviewPage() {
       window.removeEventListener('message', handler)
       clearInterval(timer)
     }
-  }, [])
+  }, [adminUrl])
 
   const previewData = useAtomValue(previewDataAtom)
 

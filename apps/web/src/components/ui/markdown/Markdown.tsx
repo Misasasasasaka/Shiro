@@ -10,11 +10,20 @@ import { compiler, RuleType, sanitizer } from 'markdown-to-jsx'
 import Script from 'next/script'
 import type * as React from 'react'
 import type { FC, PropsWithChildren } from 'react'
-import { Fragment, memo, Suspense, useCallback, useMemo } from 'react'
+import {
+  createContext,
+  Fragment,
+  memo,
+  Suspense,
+  use,
+  useCallback,
+  useMemo,
+} from 'react'
 
 import { setMainMarkdownElement } from '~/atoms/hooks/reading'
 import { ErrorBoundary } from '~/components/common/ErrorBoundary'
 import { CodeBlockRender } from '~/components/modules/shared/CodeBlock'
+import { PrismHighLighter } from '~/components/ui/code-highlighter'
 import { FloatPopover } from '~/components/ui/float-popover'
 import { MAIN_CONTENT_ID } from '~/constants/dom-id'
 import { isDev } from '~/lib/env'
@@ -24,6 +33,11 @@ import { springScrollToElement } from '~/lib/scroller'
 import { Gallery } from '../gallery'
 import { MarkdownLink } from '../link/MarkdownLink'
 import { LinkCard, LinkCardSource } from '../link-card'
+import {
+  getMarkdownSecurityPolicy,
+  type MarkdownTrustLevel,
+  resolveMarkdownTrustLevel,
+} from './markdown-security'
 import { ContainerRule } from './parsers/container'
 import { InsertRule } from './parsers/ins'
 import { KateXBlockRule, KateXRule } from './parsers/katex'
@@ -51,6 +65,8 @@ import { redHighlight } from './utils/redHighlight'
 
 export type MarkdownVariant = 'post' | 'note' | 'comment'
 
+const MarkdownTrustContext = createContext<MarkdownTrustLevel>('trusted')
+
 export interface MdProps {
   value?: string
 
@@ -67,10 +83,14 @@ export interface MdProps {
 
   allowsScript?: boolean
 
+  trustLevel?: MarkdownTrustLevel
+
   removeWrapper?: boolean
 
   variant?: MarkdownVariant
 }
+
+const defaultWrapperProps: NonNullable<MdProps['wrapperProps']> = {}
 
 const debugValue = isDev
   ? ''
@@ -89,7 +109,7 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
       value,
       renderers,
       style,
-      wrapperProps = {},
+      wrapperProps = defaultWrapperProps,
       wrapperRef,
       codeBlockFully = false,
       className,
@@ -98,11 +118,19 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
 
       as: As = 'div',
       allowsScript = false,
+      trustLevel = 'trusted',
       removeWrapper = false,
       variant = 'post',
 
       ...rest
     } = props
+
+    const inheritedTrustLevel = use(MarkdownTrustContext)
+    const effectiveTrustLevel = useMemo(
+      () => resolveMarkdownTrustLevel(inheritedTrustLevel, trustLevel),
+      [inheritedTrustLevel, trustLevel],
+    )
+    const securityPolicy = getMarkdownSecurityPolicy(effectiveTrustLevel)
 
     const MHeader = useMemo(() => createMarkdownHeadingComponent(), [])
 
@@ -142,9 +170,10 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
 
           LinkCard,
           Gallery,
-          script: allowsScript ? Script : undefined!,
 
           ...overrides,
+          script:
+            allowsScript && securityPolicy.allowScripts ? Script : undefined!,
         },
 
         overrideRules: {
@@ -280,6 +309,16 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
 
           [RuleType.codeBlock]: {
             render(node, output, state) {
+              if (!securityPolicy.allowActiveCodeBlocks) {
+                return (
+                  <PrismHighLighter
+                    key={state?.key as React.Key}
+                    content={node.text}
+                    lang={node.lang}
+                  />
+                )
+              }
+
               return (
                 <CodeBlockRender
                   key={state?.key as React.Key}
@@ -315,7 +354,9 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
           ins: InsertRule,
           kateX: KateXRule,
           kateXBlock: KateXBlockRule,
-          container: ContainerRule,
+          ...(securityPolicy.allowContainers
+            ? { container: ContainerRule }
+            : {}),
           ...extendsRules,
         },
         ...rest,
@@ -326,6 +367,7 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
       value,
       props.children,
       allowsScript,
+      securityPolicy,
       overrides,
       extendsRules,
       renderers,
@@ -333,26 +375,30 @@ export const Markdown: FC<MdProps & MarkdownToJSX.Options & PropsWithChildren> =
       MHeader,
     ])
 
-    if (removeWrapper) return <Suspense>{node}</Suspense>
-
     return (
-      <ErrorBoundary>
-        <Suspense>
-          <As
-            style={style}
-            {...wrapperProps}
-            ref={wrapperRef as any}
-            className={clsx(
-              'markdown',
-              codeBlockFully ? 'markdown--code-fully' : undefined,
-              variant !== 'post' && `markdown--${variant}`,
-              className,
-            )}
-          >
-            {node}
-          </As>
-        </Suspense>
-      </ErrorBoundary>
+      <MarkdownTrustContext.Provider value={effectiveTrustLevel}>
+        {removeWrapper ? (
+          <Suspense>{node}</Suspense>
+        ) : (
+          <ErrorBoundary>
+            <Suspense>
+              <As
+                style={style}
+                {...wrapperProps}
+                ref={wrapperRef as any}
+                className={clsx(
+                  'markdown',
+                  codeBlockFully ? 'markdown--code-fully' : undefined,
+                  variant !== 'post' && `markdown--${variant}`,
+                  className,
+                )}
+              >
+                {node}
+              </As>
+            </Suspense>
+          </ErrorBoundary>
+        )}
+      </MarkdownTrustContext.Provider>
     )
   })
 Markdown.displayName = 'Markdown'
