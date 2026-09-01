@@ -58,9 +58,14 @@ export const CodeBlockRender = (props: {
   content: string
 
   attrs?: string
+  allowExcalidraw?: boolean
 }) => {
+  const lang =
+    props.lang === 'excalidraw' && props.allowExcalidraw === false
+      ? undefined
+      : props.lang
   const Content = useMemo(() => {
-    switch (props.lang) {
+    switch (lang) {
       case 'mermaid': {
         const Mermaid =
           mermaidImport ??
@@ -85,7 +90,6 @@ export const CodeBlockRender = (props: {
         )
       }
       default: {
-        const { lang } = props
         const nextProps = { ...props }
         nextProps.content = formatCode(props.content)
 
@@ -122,7 +126,7 @@ export const CodeBlockRender = (props: {
         return <PrismHighLighter {...nextProps} />
       }
     }
-  }, [props])
+  }, [lang, props])
 
   return (
     <Suspense fallback={<BlockLoading>CodeBlock Loading...</BlockLoading>}>
