@@ -48,5 +48,8 @@
   "commented_on_block": "「{text}」にコメントしました",
   "from_location": "場所：{location}",
   "avatar_alt": "{author}のアバター",
-  "anonymous": "匿名"
+  "anonymous": "匿名",
+  "moderation_pending_ai": "コメントを送信しました。自動審査中です。",
+  "moderation_pending_owner": "コメントを送信しました。管理者の承認をお待ちください。",
+  "moderation_rejected": "コメントは承認されませんでした。修正して再送信してください。"
 }

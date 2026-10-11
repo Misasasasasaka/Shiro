@@ -1,6 +1,7 @@
+import { RuleType } from 'markdown-to-jsx'
 import type { FC } from 'react'
 
-import { Markdown, RuleType } from '~/components/ui/markdown'
+import { Markdown } from '~/components/ui/markdown/Markdown'
 import { useTypeScriptHappyCallback } from '~/hooks/common/use-callback'
 
 import { useCommentMarkdownContainerRefSetter } from './CommentProvider'

@@ -1,7 +1,7 @@
 services:
   shiro:
     container_name: shiro
-    image: innei/shiro:latest
+    image: shiro:core14
     env_file:
       - .env
     volumes:

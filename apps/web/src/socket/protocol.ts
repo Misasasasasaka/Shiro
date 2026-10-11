@@ -1,31 +1,35 @@
+import { buildEnvelope, isWsEnvelope } from '@mx-space/ws-client/protocol'
+
 import type { SocketEmitEnum } from '~/types/events'
 
-export type SocketEmission = {
-  payload: unknown
-  type: SocketEmitEnum
+export const createSocketEmission = (event: SocketEmitEnum, payload: unknown) =>
+  buildEnvelope(event, payload)
+
+export type SocketEmission = ReturnType<typeof createSocketEmission>
+export type GatewayConfig = {
+  lang?: string
+  socketSessionId: string
+  url: string
 }
 
-export const createSocketEmission = (
-  type: SocketEmitEnum,
-  payload: unknown,
-): SocketEmission => ({ payload, type })
-
 export type SocketWorkerInput =
-  | {
-      payload: { lang?: string; socketSessionId: string; url: string }
-      type: 'config'
-    }
+  | { payload: GatewayConfig; type: 'config' }
   | { payload: SocketEmission; type: 'emit' }
   | { type: 'init' | 'reconnect' }
 
 export type SocketWorkerOutput =
-  | { payload?: string; type: 'connect' | 'sid' }
-  | { type: 'disconnect' | 'ping' }
+  | { type: 'connect' | 'disconnect' | 'ping' }
   | { payload: unknown; type: 'message' }
 
-const property = (value: unknown, key: string): unknown => {
-  if (typeof value !== 'object' || value === null) return undefined
-  return Reflect.get(value, key)
+export const gatewayWebSocketUrl = (origin: string) => {
+  const url = new URL(origin)
+  if (!['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol)) {
+    throw new Error('Unsupported gateway URL protocol')
+  }
+  url.protocol = ['https:', 'wss:'].includes(url.protocol) ? 'wss:' : 'ws:'
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}/ws/web`
+  url.hash = ''
+  return url.toString()
 }
 
 export const parseGatewayEvent = (
@@ -39,23 +43,16 @@ export const parseGatewayEvent = (
       return null
     }
   }
-
-  const type = property(value, 'type')
-  if (typeof type !== 'string') return null
-  return { data: property(value, 'data'), type }
+  if (!isWsEnvelope(value)) return null
+  return { data: value.payload, type: value.event }
 }
 
 export const isSocketWorkerOutput = (
   value: unknown,
 ): value is SocketWorkerOutput => {
-  const type = property(value, 'type')
-  return (
-    type === 'connect' ||
-    type === 'disconnect' ||
-    type === 'message' ||
-    type === 'ping' ||
-    type === 'sid'
-  )
+  if (typeof value !== 'object' || value === null) return false
+  const type = Reflect.get(value, 'type')
+  return ['connect', 'disconnect', 'message', 'ping'].includes(type)
 }
 
 export const articleRoomName = (articleId: string) => `article_${articleId}`

@@ -1,4 +1,4 @@
-name: Core 13 Docker
+name: Core 14 Docker
 
 on:
   pull_request:
@@ -8,7 +8,20 @@ permissions:
   contents: read
 
 jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @shiro/web exec tsc --noEmit
+      - run: pnpm --filter @shiro/web test
+
   build:
+    needs: contracts
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -17,18 +30,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Core 13 image
+      - name: Build Core 14 image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           load: true
           push: false
-          tags: shiro-core13:ci
+          tags: shiro-core14:ci
           build-args: |
             BASE_URL=https://mx.innei.in
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Inspect image
-        run: docker image inspect shiro-core13:ci
+        run: docker image inspect shiro-core14:ci

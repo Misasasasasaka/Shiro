@@ -18,22 +18,17 @@ import {
 
 class SocketWorker {
   private router?: AppRouterInstance
-  private sid?: string
   private worker: Worker | null = null
 
   constructor() {
     if (isServerSide) return
 
-    const worker = new Worker(new URL('io.worker.ts', import.meta.url), {
+    const worker = new Worker(new URL('ws.worker.ts', import.meta.url), {
       name: 'shiro-socket-worker',
       type: 'module',
     })
     this.prepare(worker)
     this.worker = worker
-  }
-
-  async getSid() {
-    return this.sid
   }
 
   setRouter(router: AppRouterInstance) {
@@ -52,16 +47,11 @@ class SocketWorker {
         case 'connect': {
           window.dispatchEvent(new SocketConnectedEvent())
           setSocketIsConnect(true)
-          if (typeof message.payload === 'string') this.sid = message.payload
           break
         }
         case 'disconnect': {
           window.dispatchEvent(new SocketDisconnectedEvent())
           setSocketIsConnect(false)
-          break
-        }
-        case 'sid': {
-          if (typeof message.payload === 'string') this.sid = message.payload
           break
         }
         case 'message': {
@@ -82,13 +72,12 @@ class SocketWorker {
   }
 
   private prepare(worker: Worker, lang?: string) {
-    const gatewayUrlWithoutTrailingSlash = GATEWAY_URL.replace(/\/$/, '')
     this.bindMessageHandler(worker)
     worker.postMessage({
       payload: {
         lang,
         socketSessionId: getSocketWebSessionId(),
-        url: `${gatewayUrlWithoutTrailingSlash}/web`,
+        url: GATEWAY_URL || window.location.origin,
       },
       type: 'config',
     } satisfies SocketWorkerInput)

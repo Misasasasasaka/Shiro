@@ -17,7 +17,7 @@ interface SearchResultMeta {
   highlight: SearchHighlight
 }
 
-export type Core13SearchResult =
+export type CoreSearchResult =
   | (Pick<
       PostModel,
       'category' | 'createdAt' | 'id' | 'modifiedAt' | 'slug' | 'title'
@@ -63,11 +63,11 @@ const normalizePagination = (
 }
 
 /**
- * API Client 5.5.0 types describe the native V3 pagination shape. Core
- * 13.14.1 still nests search pagination and uses the old pagination key names,
+ * Core 14 still nests search pagination and uses legacy pagination key names,
+ * while the SDK describes native V3 pagination,
  * so this boundary validates and normalizes only that known SDK/Core mismatch.
  */
-export const normalizeCore13SearchPage = <T>(
+export const normalizeCoreSearchPage = <T>(
   value: unknown,
 ): PaginateResult<T> => {
   const serialized =

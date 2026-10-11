@@ -48,5 +48,8 @@
   "commented_on_block": "评论了「{text}」",
   "from_location": "来自：{location}",
   "avatar_alt": "{author} 的头像",
-  "anonymous": "匿名访客"
+  "anonymous": "匿名访客",
+  "moderation_pending_ai": "评论已提交，正在自动审核。",
+  "moderation_pending_owner": "评论已提交，等待博主审核。",
+  "moderation_rejected": "评论未通过审核，请修改后重试。"
 }
