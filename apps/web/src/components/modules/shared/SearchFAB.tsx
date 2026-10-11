@@ -28,10 +28,7 @@ import useDebounceValue from '~/hooks/common/use-debounce-value'
 import { useIsClient } from '~/hooks/common/use-is-client'
 import { Link } from '~/i18n/navigation'
 import { apiClient } from '~/lib/request'
-import {
-  type Core13SearchResult,
-  normalizeCore13SearchPage,
-} from '~/lib/search'
+import { type CoreSearchResult, normalizeCoreSearchPage } from '~/lib/search'
 import { jotaiStore } from '~/lib/store'
 
 const searchPanelOpenAtom = atom(false)
@@ -120,11 +117,11 @@ const SearchPanelImpl = () => {
     queryKey: ['search', debouncedKeyword, locale],
     enabled: debouncedKeyword.length > 0,
     queryFn: async () =>
-      normalizeCore13SearchPage<Core13SearchResult>(
+      normalizeCoreSearchPage<CoreSearchResult>(
         await apiClient.search.searchAll(debouncedKeyword, { lang: locale }),
       ),
     select: useCallback(
-      (page: PaginateResult<Core13SearchResult>): SearchListItem[] =>
+      (page: PaginateResult<CoreSearchResult>): SearchListItem[] =>
         page.data.map((item) => {
           let subtitle = ''
           let url = '/'

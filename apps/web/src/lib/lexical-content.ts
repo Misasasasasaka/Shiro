@@ -32,7 +32,7 @@ const getString = (value: unknown) =>
 /**
  * Core stores Lexical JSON as authored and can therefore return nodes created by
  * a newer editor than the renderer bundled with this Shiro release. Keep the
- * document readable while preserving the native Core 13 response: only newer
+ * document readable while preserving the native Core response: only newer
  * presentation nodes unsupported by the renderer are lowered to built-in
  * Lexical nodes here.
  */
@@ -40,6 +40,32 @@ export function normalizeLexicalContent(
   value: SerializedEditorState,
 ): SerializedEditorState {
   return normalizeNode(value) as SerializedEditorState
+}
+
+/** Preflight newer editor nodes before the static renderer runs during SSR. */
+export function canRenderLexicalContent(
+  content: string,
+  nodeTypes: ReadonlySet<string>,
+) {
+  try {
+    const state = normalizeLexicalContent(JSON.parse(content))
+    if (!isJsonObject(state.root) || !Array.isArray(state.root.children))
+      return false
+    const supported = (value: unknown): boolean => {
+      if (Array.isArray(value)) return value.every(supported)
+      if (!isJsonObject(value)) return true
+      if (
+        typeof value.type === 'string' &&
+        typeof value.version === 'number' &&
+        !nodeTypes.has(value.type)
+      )
+        return false
+      return Object.values(value).every(supported)
+    }
+    return supported(state)
+  } catch {
+    return false
+  }
 }
 
 function normalizeNode(value: unknown): unknown {

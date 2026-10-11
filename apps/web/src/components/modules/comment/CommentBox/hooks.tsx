@@ -3,7 +3,6 @@
 import {
   type AnonymousCommentDto,
   CollectionRefTypes,
-  type CommentModel,
   type ReaderCommentDto,
   type RecentlyModel,
 } from '@mx-space/api-client'
@@ -23,6 +22,7 @@ import { jotaiStore } from '~/lib/store'
 import { toast } from '~/lib/toast'
 import { buildCommentsQueryKey } from '~/queries/keys'
 
+import { normalizeCommentSubmission } from '../submission'
 import type { CommentAnchor } from '../types'
 import { MAX_COMMENT_TEXT_LENGTH } from './constants'
 import type { createInitialValue } from './providers'
@@ -154,11 +154,6 @@ export const useSendComment = () => {
   const originalRefId = useCommentOriginalRefId()
   const completedCallback = useCommentCompletedCallback()
 
-  const wrappedCompletedCallback = <T extends CommentModel>(data: T): T => {
-    completedCallback?.(data)
-    return data
-  }
-
   const { mutate, isPending } = useMutation({
     mutationFn: async (refId: string) => {
       const text = jotaiStore.get(textAtom)
@@ -187,7 +182,7 @@ export const useSendComment = () => {
         const result = isAuthenticated
           ? await apiClient.comment.readerReply(refId, readerDto)
           : await apiClient.comment.guestReply(refId, guestDto)
-        return wrappedCompletedCallback(result)
+        return normalizeCommentSubmission(result)
       }
 
       // Normal Comment
@@ -196,8 +191,9 @@ export const useSendComment = () => {
       const result = isAuthenticated
         ? await apiClient.comment.readerComment(refId, readerDto)
         : await apiClient.comment.guestComment(refId, guestDto)
+      const submission = normalizeCommentSubmission(result)
 
-      if (isLogged && syncToRecently) {
+      if (isLogged && syncToRecently && submission.status === 'published') {
         const refType = getCollectionRefType(location.pathname)
         void apiClient.recently.proxy
           .post<RecentlyModel>({
@@ -209,13 +205,18 @@ export const useSendComment = () => {
           })
           .then(() => toast.success(t('synced_to_thinking')))
       }
-      return wrappedCompletedCallback(result)
+      return submission
     },
     mutationKey: [commentRefId, 'comment'],
     onError(error) {
       toast.error(getErrorMessageFromRequestError(error))
     },
-    onSuccess() {
+    onSuccess({ comment, status, reviewer }) {
+      if (status === 'rejected') {
+        toast.error(t('moderation_rejected'))
+        return
+      }
+      if (status === 'published') completedCallback?.(comment)
       afterSubmit?.()
 
       const toastCopy =
@@ -227,7 +228,17 @@ export const useSendComment = () => {
 
       const commentListQueryKey = buildCommentsQueryKey(originalRefId)
 
-      toast.success(toastCopy)
+      if (status === 'pending') {
+        toast.info(
+          t(
+            reviewer === 'ai'
+              ? 'moderation_pending_ai'
+              : 'moderation_pending_owner',
+          ),
+        )
+      } else {
+        toast.success(toastCopy)
+      }
       jotaiStore.set(textAtom, '')
       jotaiStore.set(anchorAtom, null)
       queryClient.invalidateQueries({

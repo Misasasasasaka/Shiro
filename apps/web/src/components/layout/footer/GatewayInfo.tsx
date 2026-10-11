@@ -12,6 +12,7 @@ import { FloatPopover } from '~/components/ui/float-popover'
 import { NumberSmoothTransition } from '~/components/ui/number-transition/NumberSmoothTransition'
 import { TrackerAction } from '~/constants/tracker'
 import { usePageIsActive } from '~/hooks/common/use-is-active'
+import { useIsMountedState } from '~/hooks/common/use-is-mounted'
 import { apiClient } from '~/lib/request'
 import { routeBuilder, Routes } from '~/lib/route-builder'
 
@@ -48,6 +49,7 @@ const Help = () => {
 }
 
 const ConnectedIndicator = () => {
+  const mounted = useIsMountedState()
   const connected = useSocketIsConnect()
 
   return (
@@ -56,7 +58,7 @@ const ConnectedIndicator = () => {
         trackerMessage="socket_status"
         action={TrackerAction.Impression}
       />
-      <ConnectionStatus isConnected={connected} />
+      <ConnectionStatus isConnected={mounted && connected} />
     </div>
   )
 }
@@ -84,7 +86,10 @@ function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
 export const GatewayInfo = () => {
   const t = useTranslations('gateway')
   const isActive = usePageIsActive()
-  const count = useOnlineCount()
+  const mounted = useIsMountedState()
+  const onlineCount = useOnlineCount()
+  // The gateway can publish before this streamed footer finishes hydrating.
+  const count = mounted ? onlineCount : 0
 
   if (!isActive) return null
   return (

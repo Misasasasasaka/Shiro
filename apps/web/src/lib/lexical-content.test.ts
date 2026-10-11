@@ -1,12 +1,35 @@
 import type { SerializedEditorState } from 'lexical'
 import { describe, expect, it } from 'vitest'
 
-import { normalizeLexicalContent } from './lexical-content'
+import {
+  canRenderLexicalContent,
+  normalizeLexicalContent,
+} from './lexical-content'
 
 const state = (children: Record<string, unknown>[]) =>
   ({ root: { children, type: 'root', version: 1 } }) as SerializedEditorState
 
-describe('Core 13 Lexical content normalization', () => {
+describe('Core Lexical content normalization', () => {
+  it('falls back before SSR for unsupported nodes and malformed JSON', () => {
+    const supported = new Set(['root', 'paragraph', 'text', 'quote'])
+    expect(
+      canRenderLexicalContent(
+        JSON.stringify(
+          state([{ type: 'paragraph', version: 1, children: [] }]),
+        ),
+        supported,
+      ),
+    ).toBe(true)
+    expect(
+      canRenderLexicalContent(
+        JSON.stringify(state([{ type: 'future-core-node', version: 1 }])),
+        supported,
+      ),
+    ).toBe(false)
+    expect(canRenderLexicalContent('{', supported)).toBe(false)
+    expect(canRenderLexicalContent('null', supported)).toBe(false)
+    expect(canRenderLexicalContent('{}', supported)).toBe(false)
+  })
   it('preserves rich quote children and attribution with built-in nodes', () => {
     const normalized = normalizeLexicalContent(
       state([

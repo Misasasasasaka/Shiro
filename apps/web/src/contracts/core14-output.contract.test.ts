@@ -16,18 +16,18 @@ const fixture = vi.hoisted(() => {
     id: '9223372036854775807',
     images: [],
     slug: 'core-13',
-    summary: 'Core 13 post summary',
-    text: '# Core 13',
-    title: 'Core 13 post',
+    summary: 'Core 14 post summary',
+    text: '# Core 14',
+    title: 'Core 14 post',
   }
   const note = {
     createdAt,
     id: '9223372036854775806',
     images: [],
     nid: 13,
-    summary: 'Core 13 note summary',
-    text: 'Core 13 note',
-    title: 'Core 13 note',
+    summary: 'Core 14 note summary',
+    text: 'Core 14 note',
+    title: 'Core 14 note',
   }
   const page = {
     createdAt,
@@ -39,7 +39,7 @@ const fixture = vi.hoisted(() => {
   }
   const aggregate = {
     latestNoteId: { id: note.id, nid: note.nid },
-    seo: { description: 'A Core 13 site', title: 'Shiro' },
+    seo: { description: 'A Core 14 site', title: 'Shiro' },
     theme: {
       config: {
         module: {
@@ -91,7 +91,7 @@ const fixture = vi.hoisted(() => {
       $serialized: [
         {
           allowComment: true,
-          content: 'Core 13 thinking',
+          content: 'Core 14 thinking',
           createdAt,
           id: '9223372036854775804',
           ref: null,
@@ -105,7 +105,7 @@ const fixture = vi.hoisted(() => {
           createdAt,
           id: '9223372036854775803',
           source: null,
-          text: 'Core 13 says hello',
+          text: 'Core 14 says hello',
         },
       ],
     })),
@@ -161,7 +161,7 @@ vi.mock('~/components/ui/markdown/parsers/spoiler', () => ({ SpoilerRule: {} }))
 vi.mock('next/og', () => ({
   ImageResponse: class extends Response {
     constructor() {
-      super('Core 13 OG image', {
+      super('Core 14 OG image', {
         headers: { 'Content-Type': 'image/png' },
         status: 200,
       })
@@ -180,19 +180,19 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('Core 13 generated output contracts', () => {
+describe('Core 14 generated output contracts', () => {
   it('renders the main RSS feed from createdAt and native string IDs', async () => {
     const response = await getFeed()
     const xml = await response.text()
 
     expect(response.headers.get('Content-Type')).toBe('application/xml')
-    expect(xml).toContain('<title><![CDATA[Core 13 post]]></title>')
+    expect(xml).toContain('<title><![CDATA[Core 14 post]]></title>')
     expect(xml).toContain('<guid isPermaLink="true">')
     expect(xml).toContain('Fri, 17 Jul 2026 00:00:00 GMT')
     expect(xml).not.toContain('Invalid Date')
   })
 
-  it('renders says and thinking feeds with Core 13 timestamps', async () => {
+  it('renders says and thinking feeds with Core 14 timestamps', async () => {
     const [saysResponse, thinkingResponse] = await Promise.all([
       getSaysFeed(),
       getThinkingFeed(),
@@ -203,9 +203,9 @@ describe('Core 13 generated output contracts', () => {
     ])
 
     expect(saysXml).toContain('9223372036854775803')
-    expect(saysXml).toContain('Core 13 says hello')
+    expect(saysXml).toContain('Core 14 says hello')
     expect(thinkingXml).toContain('9223372036854775804')
-    expect(thinkingXml).toContain('Core 13 thinking')
+    expect(thinkingXml).toContain('Core 14 thinking')
     expect(saysXml).not.toContain('Invalid Date')
     expect(thinkingXml).not.toContain('Invalid Date')
   })
@@ -224,9 +224,9 @@ describe('Core 13 generated output contracts', () => {
   it.each([
     {
       data: { category: 'typescript', slug: 'core-13', type: 'post' },
-      expected: 'Core 13 post',
+      expected: 'Core 14 post',
     },
-    { data: { nid: 13, type: 'note' }, expected: 'Core 13 note' },
+    { data: { nid: 13, type: 'note' }, expected: 'Core 14 note' },
     { data: { slug: 'about', type: 'page' }, expected: 'About' },
   ])(
     'resolves $data.type OG data directly from V3 models',
@@ -257,12 +257,12 @@ describe('Core 13 generated output contracts', () => {
     ])
 
     expect(postCard).toMatchObject({
-      desc: 'Core 13 post summary',
-      title: 'Core 13 post',
+      desc: 'Core 14 post summary',
+      title: 'Core 14 post',
     })
     expect(noteCard).toMatchObject({
-      desc: 'Core 13 note summary',
-      title: 'Core 13 note',
+      desc: 'Core 14 note summary',
+      title: 'Core 14 note',
     })
     expect(fixture.getNote).toHaveBeenCalledWith(13)
   })

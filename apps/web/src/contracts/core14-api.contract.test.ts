@@ -38,9 +38,9 @@ const post = {
   modifiedAt: null,
   readCount: 12,
   slug: 'core-13',
-  summary: 'Core 13 contract fixture',
-  text: '# Core 13',
-  title: 'Core 13',
+  summary: 'Core 14 contract fixture',
+  text: '# Core 14',
+  title: 'Core 14',
 }
 
 const note = {
@@ -54,8 +54,8 @@ const note = {
   modifiedAt: null,
   nid: 13,
   readCount: 8,
-  text: 'A Core 13 note',
-  title: 'Core 13 note',
+  text: 'A Core 14 note',
+  title: 'Core 14 note',
 }
 
 const page = {
@@ -120,13 +120,13 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Mix Space Core 13 V3 API contract', () => {
+describe('Mix Space Core 14 V3 API contract', () => {
   it('parses aggregate and page list independently from native envelopes', async () => {
     const aggregate = {
       commentOptions: { allowGuestComment: true, disableComment: false },
       latestNoteId: { id: note.id, nid: note.nid },
-      seo: { description: 'A Core 13 site', title: 'Shiro' },
-      theme: { config: { footer: { otherInfo: 'Core 13' } } },
+      seo: { description: 'A Core 14 site', title: 'Shiro' },
+      theme: { config: { footer: { otherInfo: 'Core 14' } } },
       url: {
         serverUrl: 'https://core.example',
         webUrl: 'https://shiro.example',
@@ -171,7 +171,7 @@ describe('Mix Space Core 13 V3 API contract', () => {
           interaction: { [post.id]: interaction },
           translation: {
             [post.id]: {
-              article: { title: 'Core 13 translated' },
+              article: { title: 'Core 14 translated' },
               fields: ['title'],
             },
           },
@@ -294,7 +294,7 @@ describe('Mix Space Core 13 V3 API contract', () => {
       replyCount: 1,
       rootCommentId: null,
       state: 1,
-      text: 'Core 13 comment',
+      text: 'Core 14 comment',
       url: null,
     }
     const reply = {
@@ -302,7 +302,7 @@ describe('Mix Space Core 13 V3 API contract', () => {
       id: replyId,
       parentCommentId: rootId,
       rootCommentId: rootId,
-      text: 'Core 13 reply',
+      text: 'Core 14 reply',
     }
     const responses = [
       {
@@ -339,12 +339,12 @@ describe('Mix Space Core 13 V3 API contract', () => {
     await client.comment.guestComment(refId, {
       author: 'Guest',
       mail: 'guest@example.com',
-      text: 'Core 13 comment',
+      text: 'Core 14 comment',
     })
     await client.comment.guestReply(rootId, {
       author: 'Guest',
       mail: 'guest@example.com',
-      text: 'Core 13 reply',
+      text: 'Core 14 reply',
     })
     await client.comment.readerComment(refId, { text: 'Reader comment' })
     await client.comment.readerReply(rootId, { text: 'Reader reply' })
@@ -367,7 +367,7 @@ describe('Mix Space Core 13 V3 API contract', () => {
     expect(requestDetails[2]?.body).toMatchObject({
       author: 'Guest',
       mail: 'guest@example.com',
-      text: 'Core 13 comment',
+      text: 'Core 14 comment',
     })
     expect(requestDetails[4]?.body).toEqual({ text: 'Reader comment' })
   })
