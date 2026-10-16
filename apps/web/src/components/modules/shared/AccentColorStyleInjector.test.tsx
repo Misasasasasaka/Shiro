@@ -17,7 +17,7 @@ describe('AccentColorStyleInjector', () => {
     }
     const css = props.dangerouslySetInnerHTML.__html
 
-    expect(css).toContain('--color-root-bg: #e6f2f3')
+    expect(css).toContain('--color-root-bg: #f0f6f7')
     expect(css).toContain('--color-root-bg: #271a2a')
     expect(css).toContain("html[data-theme='light'].noise body::before")
     expect(css).toContain("html[data-theme='dark'].noise body::before")

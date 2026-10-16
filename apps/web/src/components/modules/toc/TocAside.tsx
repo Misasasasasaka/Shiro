@@ -98,7 +98,7 @@ export const TocAside = ({
     <m.aside
       className={clsxm('st-toc z-[3]', 'relative font-sans', className)}
       animate={{
-        opacity: isImmersive ? 0.2 : 1,
+        opacity: isImmersive ? 0.85 : 1,
       }}
       transition={Spring.presets.smooth}
       style={{
