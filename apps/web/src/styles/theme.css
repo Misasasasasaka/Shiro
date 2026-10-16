@@ -2,12 +2,12 @@ html.noise {
   background-image:
     radial-gradient(
       circle at 8% -8%,
-      color-mix(in srgb, var(--color-accent) 12%, transparent) 0,
+      color-mix(in srgb, var(--color-accent) 8%, transparent) 0,
       transparent 44%
     ),
     radial-gradient(
       circle at 96% 14%,
-      color-mix(in srgb, var(--color-accent) 6%, transparent) 0,
+      color-mix(in srgb, var(--color-accent) 4%, transparent) 0,
       transparent 38%
     );
   background-attachment: fixed;
