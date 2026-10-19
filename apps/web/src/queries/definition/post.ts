@@ -23,7 +23,10 @@ export const post = {
           prefer: 'lexical',
         })
 
-        return data.$serialized as PostWithTranslation
+        return {
+          ...data.$serialized,
+          $meta: data.$meta,
+        } as PostWithTranslation
       },
     }),
 }

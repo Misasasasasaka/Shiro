@@ -1,91 +1,237 @@
-import type { WsClient } from '@mx-space/ws-client'
-import { describe, expect, it, vi } from 'vitest'
+import { once } from 'node:events'
+
+import { buildEnvelope, type WsEnvelope } from '@mx-space/ws-client/protocol'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { type WebSocket, WebSocketServer } from 'ws'
 
 import { EventTypes, SocketEmitEnum } from '~/types/events'
 
 import { GatewayConnection } from './connection'
-import { createSocketEmission } from './protocol'
+import {
+  buildGatewayUrl,
+  createSocketEmission,
+  parseGatewayEvent,
+  type SocketWorkerOutput,
+} from './protocol'
 
-const setup = () => {
-  const listeners = new Map<string, (payload: unknown) => void>()
-  const client: WsClient = {
-    state: 'connecting',
-    on: (event, listener) => {
-      listeners.set(event, listener as (payload: unknown) => void)
-      return () => {
-        listeners.delete(event)
-      }
-    },
-    send: vi.fn(),
-    request: vi.fn(),
-    close: vi.fn(),
-  }
-  const post = vi.fn()
-  const createClient = vi.fn(() => client)
-  const connection = new GatewayConnection(
-    {
-      url: 'https://core.example',
-      socketSessionId: 'reader',
-      lang: 'en',
-    },
-    post,
-    createClient,
-  )
-  const receive = (event: string, payload?: unknown) =>
-    listeners.get(event)?.(payload)
-  return { client, post, createClient, connection, receive }
+type Peer = {
+  frames: WsEnvelope[]
+  socket: WebSocket
+  url: URL
 }
 
-describe('Core 14 worker connection', () => {
-  it('waits for Core initialization, then restores only active subscriptions after reconnect', () => {
-    const { client, post, connection, receive } = setup()
-    connection.emit(
-      createSocketEmission(SocketEmitEnum.Join, { room: 'article_a' }),
-    )
-    receive('$state', 'open')
-    expect(client.send).not.toHaveBeenCalled()
-    expect(post).not.toHaveBeenCalledWith({ type: 'connect' })
-    receive('gateway.connect', 'WebSocket connected')
-    expect(client.send).toHaveBeenCalledWith('room.join', { room: 'article_a' })
-    expect(post).toHaveBeenCalledWith({ type: 'connect' })
+const startGateway = async () => {
+  const server = new WebSocketServer({ host: '127.0.0.1', port: 0 })
+  await once(server, 'listening')
+  const address = server.address()
+  if (typeof address !== 'object' || !address) throw new Error('Missing port')
+  const origin = `http://127.0.0.1:${address.port}`
+  const peers: Peer[] = []
+  const output: SocketWorkerOutput[] = []
 
-    receive('$state', 'reconnecting')
-    expect(post).toHaveBeenCalledWith({ type: 'disconnect' })
-    vi.mocked(client.send).mockClear()
+  server.on('connection', (socket, request) => {
+    const peer: Peer = {
+      frames: [],
+      socket,
+      url: new URL(request.url ?? '/', origin),
+    }
+    peers.push(peer)
+    socket.on('message', (data) => {
+      const frame = JSON.parse(data.toString()) as WsEnvelope
+      peer.frames.push(frame)
+      if (frame.event === 'ping') {
+        socket.send(
+          JSON.stringify(buildEnvelope('ack', { ok: true }, frame.id)),
+        )
+      }
+    })
+  })
+
+  const connection = new GatewayConnection(
+    {
+      lang: 'en',
+      socketSessionId: 'reader-initial',
+      url: buildGatewayUrl(origin),
+    },
+    (message) => output.push(message),
+  )
+
+  onTestFinished(async () => {
+    connection.close()
+    for (const socket of server.clients) socket.terminate()
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()))
+    })
+  })
+
+  const peerAt = async (index: number) => {
+    await vi.waitFor(() => expect(peers.length).toBeGreaterThan(index), {
+      timeout: 3000,
+    })
+    return peers[index]
+  }
+
+  const greet = async (peer: Peer) => {
+    peer.socket.send(
+      JSON.stringify(buildEnvelope('gateway.connect', 'WebSocket connected')),
+    )
+    await vi.waitFor(() => expect(connection.connected).toBe(true))
+    await vi.waitFor(() => expect(peer.frames.length).toBeGreaterThanOrEqual(2))
+  }
+
+  return { connection, greet, output, peerAt }
+}
+
+describe('Core 14 gateway connection', () => {
+  it('waits for Core readiness and sends the latest session, language and rooms', async () => {
+    const { connection, greet, output, peerAt } = await startGateway()
+    const peer = await peerAt(0)
+    expect(peer.url.pathname).toBe('/ws/web')
+    expect(peer.url.searchParams.get('socket_session_id')).toBe(
+      'reader-initial',
+    )
+    expect(peer.url.searchParams.get('lang')).toBe('en')
+
     connection.emit(
-      createSocketEmission(SocketEmitEnum.Leave, { room: 'article_a' }),
+      createSocketEmission(SocketEmitEnum.Join, { room: 'article_old' }),
     )
     connection.emit(
-      createSocketEmission(SocketEmitEnum.Join, { room: 'article_b' }),
+      createSocketEmission(SocketEmitEnum.Leave, { room: 'article_old' }),
+    )
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.Join, { room: 'article_current' }),
     )
     connection.emit(
       createSocketEmission(SocketEmitEnum.UpdateSid, {
-        sessionId: 'new-reader',
+        sessionId: 'reader-current',
+      }),
+    )
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.UpdateLang, { lang: 'zh-CN' }),
+    )
+
+    expect(connection.connected).toBe(false)
+    expect(output).toEqual([])
+    expect(peer.frames).toEqual([])
+    await greet(peer)
+    await vi.waitFor(() => expect(peer.frames).toHaveLength(3))
+    expect(peer.frames).toEqual([
+      {
+        event: 'session.update',
+        payload: { sessionId: 'reader-current' },
+        v: 1,
+      },
+      { event: 'lang.update', payload: { lang: 'zh-CN' }, v: 1 },
+      { event: 'room.join', payload: { room: 'article_current' }, v: 1 },
+    ])
+    expect(output).toEqual([{ type: 'connect' }])
+  })
+
+  it('forwards the current business events and ignores malformed or legacy frames', async () => {
+    const { greet, output, peerAt } = await startGateway()
+    const peer = await peerAt(0)
+    await greet(peer)
+
+    peer.socket.send('invalid json')
+    peer.socket.send(JSON.stringify({ data: {}, type: 'POST_CREATE' }))
+    peer.socket.send(
+      JSON.stringify({ event: 'post.create', payload: {}, v: 2 }),
+    )
+
+    const payload = {
+      id: '9007199254740993001',
+      online: 3,
+      refId: '9007199254740993002',
+    }
+    for (const event of Object.values(EventTypes)) {
+      peer.socket.send(JSON.stringify(buildEnvelope(event, payload)))
+    }
+    const events = () =>
+      output.flatMap((message) =>
+        message.type === 'message' ? [parseGatewayEvent(message.payload)] : [],
+      )
+    await vi.waitFor(() =>
+      expect(events()).toHaveLength(Object.keys(EventTypes).length),
+    )
+    expect(events()).toEqual(
+      Object.values(EventTypes).map((type) => ({ data: payload, type })),
+    )
+  })
+
+  it('automatically reconnects and restores only rooms still being viewed', async () => {
+    const { connection, greet, output, peerAt } = await startGateway()
+    const first = await peerAt(0)
+    await greet(first)
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.Join, { room: 'article_old' }),
+    )
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.Join, { room: 'article_retained' }),
+    )
+    await vi.waitFor(() => expect(first.frames).toHaveLength(4))
+
+    first.socket.terminate()
+    await vi.waitFor(() => expect(connection.connected).toBe(false))
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.Leave, { room: 'article_old' }),
+    )
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.UpdateSid, {
+        sessionId: 'reader-updated',
       }),
     )
     connection.emit(
       createSocketEmission(SocketEmitEnum.UpdateLang, { lang: 'ja' }),
     )
-    expect(client.send).not.toHaveBeenCalled()
-    receive('gateway.connect', 'WebSocket connected')
-    expect(vi.mocked(client.send).mock.calls).toEqual([
-      ['session.update', { sessionId: 'new-reader' }],
-      ['lang.update', { lang: 'ja' }],
-      ['room.join', { room: 'article_b' }],
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.Join, { room: 'article_new' }),
+    )
+
+    const second = await peerAt(1)
+    await greet(second)
+    await vi.waitFor(() => expect(second.frames).toHaveLength(4))
+    expect(second.frames).toEqual([
+      {
+        event: 'session.update',
+        payload: { sessionId: 'reader-updated' },
+        v: 1,
+      },
+      { event: 'lang.update', payload: { lang: 'ja' }, v: 1 },
+      { event: 'room.join', payload: { room: 'article_retained' }, v: 1 },
+      { event: 'room.join', payload: { room: 'article_new' }, v: 1 },
+    ])
+    expect(output.filter((message) => message.type !== 'message')).toEqual([
+      { type: 'connect' },
+      { type: 'disconnect' },
+      { type: 'connect' },
     ])
   })
 
-  it('forwards business events and lets the SDK manage reconnects', () => {
-    const { client, post, connection, receive, createClient } = setup()
-    const payload = { id: '9007199254740993001', text: 'New comment' }
-    receive(EventTypes.COMMENT_CREATE, payload)
-    expect(post).toHaveBeenCalledWith({
-      type: 'message',
-      payload: { v: 1, event: 'comment.create', payload },
+  it('keeps a shared article room until its last subscriber leaves', async () => {
+    const { connection, greet, peerAt } = await startGateway()
+    const peer = await peerAt(0)
+    await greet(peer)
+    const join = createSocketEmission(SocketEmitEnum.Join, {
+      room: 'article_shared',
     })
-    connection.reconnect()
-    expect(createClient).toHaveBeenCalledTimes(1)
-    connection.close()
-    expect(client.close).toHaveBeenCalledOnce()
+    const leave = createSocketEmission(SocketEmitEnum.Leave, {
+      room: 'article_shared',
+    })
+    connection.emit(join)
+    connection.emit(join)
+    connection.emit(leave)
+    connection.emit(
+      createSocketEmission(SocketEmitEnum.UpdateLang, { lang: 'ja' }),
+    )
+    await vi.waitFor(() => expect(peer.frames).toHaveLength(4))
+    expect(
+      peer.frames.filter((frame) => frame.event.startsWith('room.')),
+    ).toEqual([join])
+
+    connection.emit(leave)
+    await vi.waitFor(() => expect(peer.frames).toHaveLength(5))
+    expect(
+      peer.frames.filter((frame) => frame.event.startsWith('room.')),
+    ).toEqual([join, leave])
   })
 })

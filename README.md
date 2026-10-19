@@ -5,7 +5,7 @@
 >
 > 如果你正在寻找一个全新的个人博客前端，请关注 **[余白 / Yohaku](https://github.com/Innei/Yohaku)** — 一个独立的新项目，拥有全新的设计语言与视觉体系。完整代码需 [赞助](https://github.com/sponsors/Innei) 获取访问权限。
 >
-> **Shiro 要求 Mix Space Core 14.15.2、Node.js 22+，并使用 V3 API。**
+> **Shiro 使用 V3 API 和 Node.js 22+。实时功能需要 Mix Space Core 14 的原生 WebSocket，协议按 14.16.0 适配。**
 
 一个极简主义的个人网站主题，如纸的纯净，似雪的清新。
 
@@ -41,7 +41,7 @@
 - **Jotai** - 原子化状态管理
 - **Motion** - 流畅动画库
 - **Radix UI** - 无障碍组件库
-- **原生 WebSocket** - 实时通信（Core 14 协议）
+- **原生 WebSocket** - 实时通信
 - **TailwindCSS v4** - 原子化 CSS 框架
 - **DaisyUI v5** - 组件库
 - **TanStack Query** - 服务端状态管理
@@ -50,8 +50,9 @@
 
 详细的部署教程请参考：https://mx-space.js.org/docs/themes/shiro/deploy
 
-Core 14 的环境变量、验证命令、部署和回滚说明见
-[Core 14 兼容与部署指南](docs/core14.md)。
+HTTP V3 的环境变量、验证命令、部署和回滚说明见
+[Core 14 兼容与部署指南](docs/core14.md)。Core 14 的实时协议与反向代理配置见
+[Core 14 WebSocket 适配指南](docs/core14-websocket.md)。
 
 感谢 @wibus-wee、@wuhang2003 等社区贡献者编写的详细文档。
 
@@ -77,22 +78,31 @@ Core 14 的环境变量、验证命令、部署和回滚说明见
 
 ## :whale: 快速开始
 
-### :docker: Core 14 Docker 部署
+### :package: 预构建版本
 
-本分支包含 Core 14 适配，请从本仓库构建镜像。上游 `innei/shiro:latest`
-不包含本分支的改动。
+从 [Releases](https://github.com/Innei/Shiro/releases) 页面下载最新的 `release.zip` 压缩包并解压：
 
 ```bash
-cp .env.template .env
-vim .env
-mkdir -p public
-docker build --build-arg BASE_URL=https://core.example.com -t shiro:core14 .
-docker compose up -d
+cd standalone
+vim .env # 配置环境变量
+export PORT=2323
+node server.js
 ```
 
-将 `BASE_URL` 替换为 Core origin；反向代理须支持 `/ws/web` 的 WebSocket
-Upgrade。更新代码后重新构建镜像并运行 `docker compose up -d`。
-完整配置、验证与回滚步骤见 [Core 14 指南](docs/core14.md)。
+### :docker: Docker Compose（推荐）
+
+```bash
+mkdir shiro && cd shiro
+wget https://raw.githubusercontent.com/Innei/Shiro/main/docker-compose.yml
+wget https://raw.githubusercontent.com/Innei/Shiro/main/.env.template .env
+
+vim .env     # 配置环境变量
+mkdir public # 放置自定义 Favicon
+docker compose up -d
+
+# 后续更新
+docker compose pull
+```
 
 ## :memo: Markdown 扩展
 

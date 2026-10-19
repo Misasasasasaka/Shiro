@@ -8,12 +8,12 @@ import { clsxm } from '~/lib/helper'
 
 const styles = tv({
   base: clsxm(
-    'relative mb-[1.5px] inline-block min-w-0 max-w-full leading-normal text-neutral',
-    'truncate text-left tabular-nums opacity-50 transition-all duration-500 hover:opacity-80',
+    'relative mb-[1.5px] inline-block min-w-0 max-w-full leading-normal text-base-content/70',
+    'truncate text-left tabular-nums transition-all duration-300 hover:text-base-content focus-visible:text-base-content',
   ),
   variants: {
     status: {
-      active: 'ml-2 opacity-100',
+      active: 'ml-2 font-medium text-base-content',
     },
   },
 })
@@ -55,6 +55,7 @@ export const TocItem: FC<{
       ref={$ref}
       data-index={index}
       href={`#${anchorId}`}
+      aria-current={active ? 'location' : undefined}
       className={clsxm(
         styles({
           status: active ? 'active' : undefined,

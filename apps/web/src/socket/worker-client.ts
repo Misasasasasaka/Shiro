@@ -10,9 +10,11 @@ import type { SocketEmitEnum } from '~/types/events'
 
 import { eventHandler } from './handler'
 import {
+  buildGatewayUrl,
   createSocketEmission,
   isSocketWorkerOutput,
   parseGatewayEvent,
+  type SocketEmissionPayloads,
   type SocketWorkerInput,
 } from './protocol'
 
@@ -23,7 +25,7 @@ class SocketWorker {
   constructor() {
     if (isServerSide) return
 
-    const worker = new Worker(new URL('ws.worker.ts', import.meta.url), {
+    const worker = new Worker(new URL('io.worker.ts', import.meta.url), {
       name: 'shiro-socket-worker',
       type: 'module',
     })
@@ -77,7 +79,7 @@ class SocketWorker {
       payload: {
         lang,
         socketSessionId: getSocketWebSessionId(),
-        url: GATEWAY_URL || window.location.origin,
+        url: buildGatewayUrl(GATEWAY_URL, window.location.origin),
       },
       type: 'config',
     } satisfies SocketWorkerInput)
@@ -90,7 +92,7 @@ class SocketWorker {
     eventHandler(type, data, this.router)
   }
 
-  emit(event: SocketEmitEnum, payload: unknown) {
+  emit<T extends SocketEmitEnum>(event: T, payload: SocketEmissionPayloads[T]) {
     this.postMessage({
       payload: createSocketEmission(event, payload),
       type: 'emit',

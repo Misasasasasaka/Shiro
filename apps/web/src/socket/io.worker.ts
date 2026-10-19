@@ -1,17 +1,19 @@
 /// <reference lib="webworker" />
 
 import { GatewayConnection } from './connection'
-import type { SocketWorkerInput, SocketWorkerOutput } from './protocol'
+import type { SocketWorkerInput } from './protocol'
 
 const workerScope = self as DedicatedWorkerGlobalScope
-const post = (message: SocketWorkerOutput) => workerScope.postMessage(message)
 let connection: GatewayConnection | undefined
 
 workerScope.onmessage = (event: MessageEvent<SocketWorkerInput>) => {
   const message = event.data
+
   switch (message.type) {
     case 'config': {
-      connection ??= new GatewayConnection(message.payload, post)
+      connection ??= new GatewayConnection(message.payload, (output) =>
+        workerScope.postMessage(output),
+      )
       break
     }
     case 'emit': {
@@ -23,7 +25,8 @@ workerScope.onmessage = (event: MessageEvent<SocketWorkerInput>) => {
       break
     }
     case 'init': {
-      post({ type: 'ping' })
+      workerScope.postMessage({ type: 'ping' })
+      if (connection?.connected) workerScope.postMessage({ type: 'connect' })
       break
     }
   }

@@ -3,43 +3,49 @@ import { buildEnvelope } from '@mx-space/ws-client/protocol'
 
 import { EventTypes, SocketEmitEnum } from '~/types/events'
 
-import {
-  type GatewayConfig,
-  gatewayWebSocketUrl,
-  type SocketEmission,
-  type SocketWorkerOutput,
+import type {
+  SocketEmission,
+  SocketWorkerConfig,
+  SocketWorkerOutput,
 } from './protocol'
 
-/** Keep subscription intent across disconnects, including navigation offline. */
 export class GatewayConnection {
-  private client?: WsClient
+  private client!: WsClient
   private ready = false
-  private rooms = new Set<string>()
+  private rooms = new Map<string, number>()
 
   constructor(
-    private config: GatewayConfig,
+    private config: SocketWorkerConfig,
     private post: (message: SocketWorkerOutput) => void,
-    private createClient: typeof createWsClient = createWsClient,
   ) {
     this.connect()
   }
 
+  get connected() {
+    return this.ready
+  }
+
   private connect() {
-    const client = this.createClient({
-      url: gatewayWebSocketUrl(this.config.url),
+    const client = createWsClient({
+      url: this.config.url,
       query: {
         socket_session_id: this.config.socketSessionId,
         ...(this.config.lang ? { lang: this.config.lang } : {}),
       },
     })
     this.client = client
+
     client.on('$state', (state) => {
-      if (state === 'open') return
+      if (client !== this.client || state === 'open') return
+      const wasReady = this.ready
       this.ready = false
-      this.post({ type: 'disconnect' })
+      if (wasReady) this.post({ type: 'disconnect' })
     })
-    // Core initializes the session asynchronously after the upgrade handshake.
+
+    // The HTTP upgrade completes before Core finishes initializing metadata.
+    // Wait for its greeting before sending commands or restoring subscriptions.
     client.on('gateway.connect', () => {
+      if (client !== this.client || this.ready) return
       this.ready = true
       client.send(SocketEmitEnum.UpdateSid, {
         sessionId: this.config.socketSessionId,
@@ -47,46 +53,62 @@ export class GatewayConnection {
       if (this.config.lang) {
         client.send(SocketEmitEnum.UpdateLang, { lang: this.config.lang })
       }
-      for (const room of this.rooms) client.send(SocketEmitEnum.Join, { room })
+      for (const room of this.rooms.keys()) {
+        client.send(SocketEmitEnum.Join, { room })
+      }
       this.post({ type: 'connect' })
     })
+
     for (const event of Object.values(EventTypes)) {
       client.on(event, (payload: unknown) => {
+        if (client !== this.client) return
         this.post({ payload: buildEnvelope(event, payload), type: 'message' })
       })
     }
   }
 
-  emit({ event, payload }: SocketEmission) {
-    if (typeof payload !== 'object' || payload === null) return
-    const room = Reflect.get(payload, 'room')
-    const sessionId = Reflect.get(payload, 'sessionId')
-    const lang = Reflect.get(payload, 'lang')
-    if (event === SocketEmitEnum.Join && typeof room === 'string') {
-      this.rooms.add(room)
-    } else if (event === SocketEmitEnum.Leave && typeof room === 'string') {
-      this.rooms.delete(room)
-    } else if (
-      event === SocketEmitEnum.UpdateSid &&
-      typeof sessionId === 'string'
-    ) {
-      this.config.socketSessionId = sessionId
-    } else if (
-      event === SocketEmitEnum.UpdateLang &&
-      typeof lang === 'string'
-    ) {
-      this.config.lang = lang
+  emit(message: SocketEmission) {
+    switch (message.event) {
+      case SocketEmitEnum.Join: {
+        const { room } = message.payload
+        const count = this.rooms.get(room) ?? 0
+        this.rooms.set(room, count + 1)
+        if (count > 0) return
+        break
+      }
+      case SocketEmitEnum.Leave: {
+        const { room } = message.payload
+        const count = this.rooms.get(room) ?? 0
+        if (count > 1) this.rooms.set(room, count - 1)
+        else this.rooms.delete(room)
+        if (count !== 1) return
+        break
+      }
+      case SocketEmitEnum.UpdateSid: {
+        this.config.socketSessionId = message.payload.sessionId
+        break
+      }
+      case SocketEmitEnum.UpdateLang: {
+        this.config.lang = message.payload.lang
+        break
+      }
     }
-    if (this.ready) this.client?.send(event, payload)
+
+    if (this.ready) this.client.send(message.event, message.payload)
   }
 
   reconnect() {
-    // The official client owns heartbeat, backoff and automatic reconnects.
-    if (!this.client || this.client.state === 'closed') this.connect()
+    if (
+      this.client.state !== 'reconnecting' &&
+      this.client.state !== 'closed'
+    ) {
+      return
+    }
+    this.client.close()
+    this.connect()
   }
 
   close() {
-    this.ready = false
-    this.client?.close()
+    this.client.close()
   }
 }

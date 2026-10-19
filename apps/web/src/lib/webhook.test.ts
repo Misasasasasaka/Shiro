@@ -4,14 +4,16 @@ import { describe, expect, it } from 'vitest'
 
 import { isBusinessEvent, verifyWebhookSignatures } from './webhook'
 
-describe('@mx-space/webhook 1.0 signature contract', () => {
-  const secret = 'core-14-webhook-secret'
+describe('@mx-space/webhook 1.0 contract', () => {
+  const secret = 'core-13-webhook-secret'
   const payload = JSON.stringify({ data: '9007199254740993001' })
 
-  it('accepts Core 14 dot events and rejects retired uppercase events', () => {
+  it('recognizes Core 14 event headers', () => {
     expect(isBusinessEvent('post.create')).toBe(true)
-    expect(isBusinessEvent('comment.update')).toBe(true)
+    expect(isBusinessEvent('comment.create')).toBe(true)
+    expect(isBusinessEvent('visitor.online')).toBe(true)
     expect(isBusinessEvent('POST_CREATE')).toBe(false)
+    expect(isBusinessEvent('unknown.event')).toBe(false)
   })
 
   it('requires and verifies both SHA-1 and SHA-256 signatures', () => {
