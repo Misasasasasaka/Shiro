@@ -1,14 +1,17 @@
 # Mix Space Core 13 兼容与部署
 
-本分支只支持 Mix Space Core 13，不再兼容 Core 10。代码直接使用 V3
+本文记录 Mix Space Core 13 的 HTTP V3 适配，不再兼容 Core 10。代码直接使用 V3
 `{ data, meta }` 响应、Snowflake 字符串 ID 和 API Client v5 正式模型，未引入
 任何旧响应适配器。
+
+实时功能现已迁移到 Core 14 的 `/ws/web`，不再连接 Core 13 的 Socket.IO。
+连接配置与测试见 [Core 14 WebSocket 适配指南](core14-websocket.md)。
 
 ## 已验证版本
 
 - Mix Space Core：13.14.1
 - `@mx-space/api-client`：5.5.0
-- `@mx-space/webhook`：0.9.0
+- `@mx-space/webhook`：当前使用 1.0.0（Core 14 事件名）；HTTP 适配时使用 0.9.0
 - Node.js：22 或更高
 
 任务最初指定的 Core 13.13.1 已由 13.14.1 取代。13.14.1 是实施时的最新
@@ -31,12 +34,12 @@ WEBHOOK_SECRET=replace-with-the-core-webhook-secret
 ```
 
 `NEXT_PUBLIC_API_URL` 必须包含 `/api/v3`。`NEXT_PUBLIC_GATEWAY_URL` 只填写
-Socket.IO origin，Shiro 会连接 `/web` namespace。若浏览器和服务端需要不同的
+Core 14 gateway origin，Shiro 会通过原生 WebSocket 连接 `/ws/web`。若浏览器和服务端需要不同的
 Core 地址，可额外设置 `NEXT_PUBLIC_CLIENT_API_URL`。
 
 Core 中的 webhook 地址应设为 `https://shiro.example.com/api/webhook`，两端必须
-使用相同的 `WEBHOOK_SECRET`。Shiro 兼容 webhook 0.9.0 的 SHA-1 签名，并同时
-接受 SHA-256 签名。
+使用相同的 `WEBHOOK_SECRET`。Shiro 要求同时通过 SHA-1 和 SHA-256 签名验证，
+事件名遵循 webhook 1.0.0 的 `post.create` 等格式。
 
 ## 本地验证
 
@@ -57,16 +60,8 @@ CORE13_INTEGRATION_URL=https://core.example.com/api/v3 \
   src/contracts/core13-live.integration.test.ts
 ```
 
-WebSocket 测试还需要显式提供 gateway：
-
-```bash
-CORE13_GATEWAY_URL=https://core.example.com \
-  pnpm --filter @shiro/web exec vitest run \
-  src/contracts/core13-live.websocket.integration.test.ts
-```
-
-该测试连接 `/web`，验证在线人数，以及 `join`、`leave`、`updateSid` 和
-`updateLang` 消息。它不会创建评论或修改 Core 数据。
+WebSocket 测试已迁移至 Core 14；使用 `pnpm --filter @shiro/web test:websocket`，
+真实实例测试需设置 `CORE14_GATEWAY_URL`，详见上述适配指南。
 
 ## Docker 部署
 

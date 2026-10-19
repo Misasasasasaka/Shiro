@@ -1,26 +1,40 @@
+import { isWsEnvelope } from '@mx-space/ws-client/protocol'
+
 import type { SocketEmitEnum } from '~/types/events'
 
-export type SocketEmission = {
-  payload: unknown
-  type: SocketEmitEnum
+export type SocketEmissionPayloads = {
+  [SocketEmitEnum.Join]: { room: string }
+  [SocketEmitEnum.Leave]: { room: string }
+  [SocketEmitEnum.UpdateSid]: { sessionId: string }
+  [SocketEmitEnum.UpdateLang]: { lang: string }
 }
 
-export const createSocketEmission = (
-  type: SocketEmitEnum,
-  payload: unknown,
-): SocketEmission => ({ payload, type })
+export type SocketEmission = {
+  [T in SocketEmitEnum]: {
+    event: T
+    payload: SocketEmissionPayloads[T]
+    v: 1
+  }
+}[SocketEmitEnum]
+
+export const createSocketEmission = <T extends SocketEmitEnum>(
+  event: T,
+  payload: SocketEmissionPayloads[T],
+): SocketEmission => ({ event, payload, v: 1 }) as SocketEmission
+
+export type SocketWorkerConfig = {
+  lang?: string
+  socketSessionId: string
+  url: string
+}
 
 export type SocketWorkerInput =
-  | {
-      payload: { lang?: string; socketSessionId: string; url: string }
-      type: 'config'
-    }
+  | { payload: SocketWorkerConfig; type: 'config' }
   | { payload: SocketEmission; type: 'emit' }
   | { type: 'init' | 'reconnect' }
 
 export type SocketWorkerOutput =
-  | { payload?: string; type: 'connect' | 'sid' }
-  | { type: 'disconnect' | 'ping' }
+  | { type: 'connect' | 'disconnect' | 'ping' }
   | { payload: unknown; type: 'message' }
 
 const property = (value: unknown, key: string): unknown => {
@@ -40,9 +54,8 @@ export const parseGatewayEvent = (
     }
   }
 
-  const type = property(value, 'type')
-  if (typeof type !== 'string') return null
-  return { data: property(value, 'data'), type }
+  if (!isWsEnvelope(value)) return null
+  return { data: value.payload, type: value.event }
 }
 
 export const isSocketWorkerOutput = (
@@ -53,9 +66,32 @@ export const isSocketWorkerOutput = (
     type === 'connect' ||
     type === 'disconnect' ||
     type === 'message' ||
-    type === 'ping' ||
-    type === 'sid'
+    type === 'ping'
   )
 }
 
 export const articleRoomName = (articleId: string) => `article_${articleId}`
+
+export const buildGatewayUrl = (gateway: string, pageOrigin?: string) => {
+  const url = new URL(gateway || pageOrigin || '', pageOrigin)
+  switch (url.protocol) {
+    case 'https:':
+    case 'wss:': {
+      url.protocol = 'wss:'
+      break
+    }
+    case 'http:':
+    case 'ws:': {
+      url.protocol = 'ws:'
+      break
+    }
+    default: {
+      throw new Error('The Core gateway must use HTTP(S) or WS(S)')
+    }
+  }
+
+  const path = url.pathname.replace(/\/+$/, '')
+  url.pathname = path.endsWith('/ws/web') ? path : `${path}/ws/web`
+  url.hash = ''
+  return url.toString()
+}
