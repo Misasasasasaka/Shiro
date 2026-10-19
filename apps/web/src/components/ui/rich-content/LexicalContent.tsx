@@ -173,7 +173,7 @@ export function LexicalContent({
     [variant],
   )
 
-  if (!editorState) return null
+  if (!editorState) throw new Error('Invalid Lexical content')
 
   return (
     <PresentDialogProvider value={presentDialog}>

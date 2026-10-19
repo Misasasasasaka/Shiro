@@ -87,8 +87,8 @@ importers:
         specifier: ^0.42.0
         version: 0.42.0
       '@mx-space/api-client':
-        specifier: 5.5.0
-        version: 5.5.0
+        specifier: 5.13.0
+        version: 5.13.0
       '@mx-space/webhook':
         specifier: 1.0.0
         version: 1.0.0
@@ -1901,8 +1901,8 @@ packages:
   '@mermaid-js/parser@1.0.1':
     resolution: {integrity: sha512-opmV19kN1JsK0T6HhhokHpcVkqKpF+x2pPDKKM2ThHtZAB5F4PROopk0amuVYK5qMrIA4erzpNm8gmPNJgMDxQ==}
 
-  '@mx-space/api-client@5.5.0':
-    resolution: {integrity: sha512-Ic2O4V9xrqj2KkoYVq2hIq4oTaUF9iBF5n7pz2V4pRt/eD/qZHFkKdndTJT+n0ebz7dHHVnbV/Z+LQvIYlqKyw==}
+  '@mx-space/api-client@5.13.0':
+    resolution: {integrity: sha512-bjFLQyocEqgXXS2iRrIbG78GfV1BNWbCz1jn+LyD7iZBQmUpuW0mTxIyTkQZwltBii3Ylv2AvReahtNcQ9RzfQ==}
     engines: {node: '>=22'}
 
   '@mx-space/webhook@1.0.0':
@@ -8922,7 +8922,7 @@ snapshots:
     dependencies:
       langium: 4.2.1
 
-  '@mx-space/api-client@5.5.0': {}
+  '@mx-space/api-client@5.13.0': {}
 
   '@mx-space/webhook@1.0.0':
     dependencies:

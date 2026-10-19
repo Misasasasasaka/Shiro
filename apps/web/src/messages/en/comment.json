@@ -48,5 +48,8 @@
   "commented_on_block": "Commented on「{text}」",
   "from_location": "From: {location}",
   "avatar_alt": "{author}'s avatar",
-  "anonymous": "Anonymous"
+  "anonymous": "Anonymous",
+  "moderation_pending_ai": "Comment submitted and awaiting automated review.",
+  "moderation_pending_owner": "Comment submitted and awaiting the site owner’s review.",
+  "moderation_rejected": "Your comment was not approved. Please edit it and try again."
 }

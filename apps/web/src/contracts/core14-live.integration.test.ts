@@ -3,13 +3,10 @@ import { fetchAdaptor } from '@mx-space/api-client/dist/adaptors/fetch'
 import { describe, expect, it } from 'vitest'
 
 import { normalizeCommentThreadPage } from '~/components/modules/comment/contract'
-import {
-  type Core13SearchResult,
-  normalizeCore13SearchPage,
-} from '~/lib/search'
+import { type CoreSearchResult, normalizeCoreSearchPage } from '~/lib/search'
 
-const configuredUrl = process.env.CORE13_INTEGRATION_URL
-const expectedVersion = process.env.CORE13_EXPECTED_VERSION ?? '13.14.1'
+const configuredUrl = process.env.CORE14_INTEGRATION_URL
+const expectedVersion = process.env.CORE14_EXPECTED_VERSION ?? '14.15.2'
 
 const normalizeEndpoint = (value: string) => {
   const withoutTrailingSlash = value.replace(/\/+$/, '')
@@ -21,7 +18,7 @@ const normalizeEndpoint = (value: string) => {
 const endpoint = configuredUrl ? normalizeEndpoint(configuredUrl) : undefined
 const liveDescribe = endpoint ? describe.sequential : describe.skip
 
-liveDescribe('Core 13 live integration', () => {
+liveDescribe('Core 14 live integration', () => {
   const apiClient = createClient(fetchAdaptor)(
     endpoint ?? 'http://127.0.0.1/api/v3',
     {
@@ -29,7 +26,7 @@ liveDescribe('Core 13 live integration', () => {
     },
   )
 
-  it('reports the expected Core 13 release and V3 health', async () => {
+  it('reports the expected Core 14 release and V3 health', async () => {
     const [healthResponse, infoResponse] = await Promise.all([
       fetch(`${endpoint}/health`),
       fetch(`${endpoint}/info`),
@@ -107,7 +104,7 @@ liveDescribe('Core 13 live integration', () => {
 
   it('loads local search with fallback metadata and native pagination', async () => {
     const response = await apiClient.search.searchAll('React', { lang: 'en' })
-    const page = normalizeCore13SearchPage<Core13SearchResult>(response)
+    const page = normalizeCoreSearchPage<CoreSearchResult>(response)
 
     expect(Array.isArray(page.data)).toBe(true)
     expect(page.pagination.page).toBeGreaterThan(0)
@@ -150,10 +147,10 @@ liveDescribe('Core 13 live integration', () => {
     expect(replies).toBeDefined()
   }, 30_000)
 
-  it.runIf(Boolean(process.env.CORE13_SHIRO_URL))(
+  it.runIf(Boolean(process.env.CORE14_SHIRO_URL))(
     'serves Shiro RSS, Feed, Sitemap and OG against the live Core',
     async () => {
-      const shiroUrl = process.env.CORE13_SHIRO_URL?.replace(/\/+$/, '')
+      const shiroUrl = process.env.CORE14_SHIRO_URL?.replace(/\/+$/, '')
       if (!shiroUrl) return
       const posts = await apiClient.post.getList(1, 1)
       const post = posts.data[0]

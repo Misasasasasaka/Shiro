@@ -23,7 +23,7 @@
     "prod:stop": "pm2 stop ecosystem.config.cjs",
     "start": "next start -p 2323",
     "test": "vitest run",
-    "test:core13": "vitest run src/contracts/core13-live.integration.test.ts",
+    "test:core14": "vitest run src/contracts/core14-live.integration.test.ts src/contracts/core14-live.websocket.integration.test.ts",
     "test:websocket": "vitest run src/socket src/contracts/core14-live.websocket.integration.test.ts"
   },
   "dependencies": {
@@ -39,7 +39,7 @@
     "@lexical/markdown": "^0.42.0",
     "@lexical/react": "^0.42.0",
     "@lexical/rich-text": "^0.42.0",
-    "@mx-space/api-client": "5.5.0",
+    "@mx-space/api-client": "5.13.0",
     "@mx-space/webhook": "1.0.0",
     "@mx-space/ws-client": "0.1.0",
     "@radix-ui/react-avatar": "1.1.11",

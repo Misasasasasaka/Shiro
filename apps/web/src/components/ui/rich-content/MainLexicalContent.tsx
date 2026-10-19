@@ -1,14 +1,39 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import {
+  allNodes,
+  codeSnippetNodes,
+  embedNodes,
+  ExcalidrawNode,
+  galleryNodes,
+} from '@haklex/rich-kit-shiro'
+import type { ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { setMainMarkdownElement } from '~/atoms/hooks/reading'
 import { MAIN_CONTENT_ID } from '~/constants/dom-id'
 import { DOMCustomEvents } from '~/constants/event'
+import { canRenderLexicalContent } from '~/lib/lexical-content'
 import { springScrollToElement } from '~/lib/scroller'
 
 import type { LexicalContentProps } from './LexicalContent'
 import { LexicalContent } from './LexicalContent'
+
+const rendererNodeTypes = new Set([
+  'root',
+  'text',
+  'paragraph',
+  'linebreak',
+  'tab',
+  'nested-doc',
+  ...[
+    ...allNodes,
+    ...codeSnippetNodes,
+    ...embedNodes,
+    ExcalidrawNode,
+    ...galleryNodes,
+  ].map((node) => node.getType()),
+])
 
 function useRichHeadingAnchorEnhancer(
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -38,8 +63,14 @@ function useRichHeadingAnchorEnhancer(
   }, [containerRef])
 }
 
-export function MainLexicalContent(props: LexicalContentProps) {
+export function MainLexicalContent(
+  props: LexicalContentProps & { fallback?: ReactNode },
+) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const supported = useMemo(
+    () => canRenderLexicalContent(props.content, rendererNodeTypes),
+    [props.content],
+  )
 
   const ref = useCallback((element: HTMLDivElement | null) => {
     containerRef.current = element
@@ -51,6 +82,8 @@ export function MainLexicalContent(props: LexicalContentProps) {
   useEffect(() => {
     document.dispatchEvent(new CustomEvent(DOMCustomEvents.RefreshToc))
   }, [props.content])
+
+  if (!supported) return props.fallback ?? null
 
   return (
     <div id={MAIN_CONTENT_ID} ref={ref}>

@@ -51,7 +51,7 @@
 详细的部署教程请参考：https://mx-space.js.org/docs/themes/shiro/deploy
 
 HTTP V3 的环境变量、验证命令、部署和回滚说明见
-[Core 13 兼容与部署指南](docs/core13.md)。Core 14 的实时协议与反向代理配置见
+[Core 14 兼容与部署指南](docs/core14.md)。Core 14 的实时协议与反向代理配置见
 [Core 14 WebSocket 适配指南](docs/core14-websocket.md)。
 
 感谢 @wibus-wee、@wuhang2003 等社区贡献者编写的详细文档。

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeCore13SearchPage } from './search'
+import { normalizeCoreSearchPage } from './search'
 
 describe('Core 13 search response normalization', () => {
   it('normalizes the nested Core 13.14.1 search payload', () => {
-    const result = normalizeCore13SearchPage<{ id: string }>({
+    const result = normalizeCoreSearchPage<{ id: string }>({
       $serialized: {
         data: {
           data: [{ id: '9223372036854775807' }],
@@ -34,7 +34,7 @@ describe('Core 13 search response normalization', () => {
   })
 
   it('accepts the native V3 pagination shape declared by API Client 5', () => {
-    const result = normalizeCore13SearchPage<{ id: string }>({
+    const result = normalizeCoreSearchPage<{ id: string }>({
       data: [{ id: 'content-id' }],
       pagination: { page: 1, size: 10, total: 1, totalPages: 1 },
     })

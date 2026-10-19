@@ -18,7 +18,8 @@ export const note = {
         ]
 
         if (value === LATEST_KEY) {
-          return (await apiClient.note.getLatest()) as NoteDetail
+          const data = await apiClient.note.getLatest()
+          return { ...data.$serialized, $meta: data.$meta } as NoteDetail
         }
         const parsedNid = Number(value)
         if (!Number.isSafeInteger(parsedNid) || parsedNid < 1) {
@@ -31,7 +32,7 @@ export const note = {
           prefer: 'lexical',
         })
 
-        return data as NoteDetail
+        return { ...data.$serialized, $meta: data.$meta } as NoteDetail
       },
     }),
 }
