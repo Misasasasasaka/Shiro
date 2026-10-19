@@ -5,7 +5,7 @@
 >
 > 如果你正在寻找一个全新的个人博客前端，请关注 **[余白 / Yohaku](https://github.com/Innei/Yohaku)** — 一个独立的新项目，拥有全新的设计语言与视觉体系。完整代码需 [赞助](https://github.com/sponsors/Innei) 获取访问权限。
 >
-> **Shiro 要求 Mix Space Core 13.x（已验证 13.14.1）、Node.js 22+，并使用 V3 API。**
+> **Shiro 使用 V3 API 和 Node.js 22+。实时功能需要 Mix Space Core 14 的原生 WebSocket，协议按 14.16.0 适配。**
 
 一个极简主义的个人网站主题，如纸的纯净，似雪的清新。
 
@@ -41,7 +41,7 @@
 - **Jotai** - 原子化状态管理
 - **Motion** - 流畅动画库
 - **Radix UI** - 无障碍组件库
-- **Socket.IO** - 实时通信
+- **原生 WebSocket** - 实时通信
 - **TailwindCSS v4** - 原子化 CSS 框架
 - **DaisyUI v5** - 组件库
 - **TanStack Query** - 服务端状态管理
@@ -50,8 +50,9 @@
 
 详细的部署教程请参考：https://mx-space.js.org/docs/themes/shiro/deploy
 
-Core 13 的环境变量、验证命令、部署和回滚说明见
-[Core 13 兼容与部署指南](docs/core13.md)。
+HTTP V3 的环境变量、验证命令、部署和回滚说明见
+[Core 13 兼容与部署指南](docs/core13.md)。Core 14 的实时协议与反向代理配置见
+[Core 14 WebSocket 适配指南](docs/core14-websocket.md)。
 
 感谢 @wibus-wee、@wuhang2003 等社区贡献者编写的详细文档。
 
