@@ -23,10 +23,10 @@ import { useCallback, useMemo } from 'react'
 
 import { getWebUrl } from '~/atoms'
 import { useModalStack } from '~/components/ui/modal/stacked/provider'
-import { API_URL } from '~/constants/env'
 import { useIsDark } from '~/hooks/common/use-is-dark'
 import { fetchGitHubApi } from '~/lib/github'
 import { normalizeLexicalContent } from '~/lib/lexical-content'
+import { fetchMxSpaceLinkCard } from '~/lib/mx-space-link-card'
 
 const fallbackSansFont =
   "var(--app-font-sans, system-ui), -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Roboto, Helvetica, 'noto sans sc', 'hiragino sans gb', sans-serif, Apple Color Emoji, Segoe UI Emoji, Not Color Emoji"
@@ -85,12 +85,8 @@ const linkCardFetchContext: LinkCardFetchContext = {
       },
     },
     'mx-space': {
-      request: async (path) => {
-        const r = await fetch(
-          `${API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`,
-        )
-        return await r.json()
-      },
+      request: async <T,>(path: string) =>
+        (await fetchMxSpaceLinkCard(path)) as T,
     },
   },
 }

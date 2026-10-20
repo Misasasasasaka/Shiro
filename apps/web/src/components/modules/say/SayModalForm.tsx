@@ -27,9 +27,8 @@ export const SayModalForm: FC<{
     const values = $form.getCurrentValues()
 
     if (editingData) {
-      await apiClient.say.proxy(editingData.id).patch({
+      await apiClient.say.proxy(editingData.id).put({
         data: {
-          ...editingData,
           ...values,
         },
       })

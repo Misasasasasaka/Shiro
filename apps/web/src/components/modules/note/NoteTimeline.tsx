@@ -1,21 +1,16 @@
 'use client'
 
-import type { NoteTimelineItem as NoteTimelineItemData } from '@mx-space/api-client'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { TargetAndTransition } from 'motion/react'
 import { AnimatePresence, m } from 'motion/react'
 import { useLocale } from 'next-intl'
 import { memo } from 'react'
 
-import { apiClient } from '~/lib/request'
 import { useCurrentNoteDataSelector } from '~/providers/note/CurrentNoteDataProvider'
 import { useCurrentNoteNid } from '~/providers/note/CurrentNoteIdProvider'
+import { queries } from '~/queries/definition'
 
 import { NoteTimelineItem } from './NoteTimelineItem'
-
-type ProtectedNoteTimelineItem = NoteTimelineItemData & {
-  hasPassword?: boolean
-}
 
 export const NoteTimeline = memo(() => {
   const noteId = useCurrentNoteNid()
@@ -48,18 +43,7 @@ const NoteTimelineImpl = () => {
   const noteId = note?.id
 
   const { data: timelineData } = useQuery({
-    queryKey: ['note_timeline', noteId, locale],
-    queryFn: async ({ queryKey }) => {
-      const [, noteId, lang] = queryKey
-      if (!noteId) throw ''
-      const data = await apiClient.note.proxy.list(noteId).get<{
-        data: ProtectedNoteTimelineItem[]
-        size: number
-      }>({
-        params: { size: 10, lang },
-      })
-      return data.data
-    },
+    ...queries.note.timeline(noteId ?? '', locale),
     enabled: noteId !== undefined,
     placeholderData: keepPreviousData,
   })

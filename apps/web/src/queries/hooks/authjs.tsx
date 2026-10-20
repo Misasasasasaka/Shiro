@@ -16,12 +16,7 @@ import { useAggregationSelector } from '~/providers/root/aggregation-data-provid
 export const useAuthProviders = () => {
   const { data } = useQuery({
     queryKey: ['providers'],
-    queryFn: () =>
-      apiClient.proxy.auth.providers
-        .get<{
-          data: AuthSocialProviders[]
-        }>()
-        .then((res) => res.data),
+    queryFn: () => apiClient.proxy.auth.providers.get<AuthSocialProviders[]>(),
     refetchOnMount: 'always',
     meta: {
       persist: true,

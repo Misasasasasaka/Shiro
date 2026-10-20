@@ -6,6 +6,7 @@
 
 ## 版本与变化
 
+- 兼容基线：Core **14.16.0**（2026-10-20 核对的最新稳定版）
 - `@mx-space/api-client`：5.13.0
 - `@mx-space/webhook`：1.0.0
 - `@mx-space/ws-client`：0.1.0
@@ -17,6 +18,15 @@
 保留 Shiro 原有富文本样式和渲染器。新编辑器的引文、聊天、股票节点继续
 降级为可读内容；渲染错误或正文 JSON 缺失时，文章、手记和独立页面回退到
 Core 返回的 Markdown 正文。此升级不包含 Core 新增会员购买、TTS 等前端界面。
+
+V3 响应由 SDK 统一解包：登录提供方、站点地址和相邻手记数组不再二次读取
+`.data`；关联文章从 `$meta.related` 读取。置顶提交 `pinAt` 日期或 `null`，
+说说编辑使用 `PUT /says/:id`。富文本链接卡片通过 SDK 获取文章，手记按
+`/notes/nid/:nid` 查询。服务端登录判断复用携带当前请求 Cookie 的 SDK，
+会话加载期间保留该结果，切换为读者后清除博主管理状态。
+
+RSS 支持未配置主题、RSS 模块或 favicon 的站点，缺省 favicon 使用
+`/favicon.ico`。
 
 ## 配置与部署
 
@@ -60,8 +70,9 @@ pnpm --filter @shiro/web test
 pnpm --filter @shiro/web build:ci
 ```
 
-真实 Core 测试默认跳过。指定有公开文章、手记、独立页面的测试实例，并将
-`CORE14_EXPECTED_VERSION` 设为该实例的实际版本（以下以 14.16.0 为例）：
+真实 Core 测试默认跳过。指定有公开文章和手记的测试实例；独立页面详情在没有
+页面数据时明确跳过。`CORE14_EXPECTED_VERSION` 默认为 14.16.0，也可显式指定
+待验证版本：
 
 ```bash
 CORE14_INTEGRATION_URL=https://core.example.com/api/v3 \
@@ -76,6 +87,10 @@ HTTP 测试检查聚合信息、列表/详情、搜索、评论和回复；WebSo
 
 同时设置 `CORE14_SHIRO_URL` 可检查 Shiro 的 RSS、说说/思考 Feed、Sitemap
 和 OG 输出。浏览器还应检查文章渲染、评论提交和断线后恢复在线人数/文章通知。
+
+14.16.0 验证使用独立 PostgreSQL、Redis 和 Core 官方镜像创建测试数据，
+覆盖独立页面、手记时间线、登录状态、文章置顶/取消置顶、说说修改，以及
+评论发布、编辑、置顶和回复。管理员写操作只应在隔离实例执行。
 
 Core 14 搜索仍返回嵌套列表和 `current_page` / `total_page` 分页字段。
 搜索归一化逻辑保留；评论列表也兼容 SDK 解包后的原生 V3 分页元信息。

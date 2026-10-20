@@ -12,7 +12,9 @@ export const PostRelated: FC<{
 }> = ({ type = 'after' }) => {
   const t = useTranslations('post')
   const infoText = type === 'before' ? t('related_before') : t('related_after')
-  const related = useCurrentPostDataSelector((s) => s?.related)
+  const related = useCurrentPostDataSelector(
+    (s) => s?.$meta?.related ?? s?.related,
+  )
   if (!related) {
     return null
   }
@@ -28,8 +30,11 @@ export const PostRelated: FC<{
       </h3>
       <ul className="ml-0 mt-4 list-inside list-disc pl-0 text-base leading-relaxed">
         {related.map((post) => {
-          if (!post.category) return null
-          const href = `/posts/${post.category.slug}/${post.slug}`
+          if (!post.slug) return null
+          const category = 'category' in post ? post.category : undefined
+          const href = category
+            ? `/posts/${category.slug}/${post.slug}`
+            : `/posts/${post.slug}`
           return (
             <li key={href}>
               <PeekLink href={href} className="shiro-link--underline">

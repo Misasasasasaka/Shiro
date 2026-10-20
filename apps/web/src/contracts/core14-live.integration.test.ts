@@ -6,7 +6,7 @@ import { normalizeCommentThreadPage } from '~/components/modules/comment/contrac
 import { type CoreSearchResult, normalizeCoreSearchPage } from '~/lib/search'
 
 const configuredUrl = process.env.CORE14_INTEGRATION_URL
-const expectedVersion = process.env.CORE14_EXPECTED_VERSION ?? '14.15.2'
+const expectedVersion = process.env.CORE14_EXPECTED_VERSION ?? '14.16.0'
 
 const normalizeEndpoint = (value: string) => {
   const withoutTrailingSlash = value.replace(/\/+$/, '')
@@ -63,25 +63,21 @@ liveDescribe('Core 14 live integration', () => {
     expect(pages.data.every((item) => typeof item.id === 'string')).toBe(true)
   }, 30_000)
 
-  it('loads post, note and page lists and native detail models', async () => {
-    const [posts, notes, pages] = await Promise.all([
+  it('loads post and note lists and native detail models', async () => {
+    const [posts, notes] = await Promise.all([
       apiClient.post.getList(1, 1, { lang: 'zh-CN' }),
       apiClient.note.getList(1, 1, { lang: 'zh-CN', withSummary: true }),
-      apiClient.page.getList(1, 1),
     ])
 
     const post = posts.data[0]
     const note = notes.data[0]
-    const page = pages.data[0]
     expect(post).toBeDefined()
     expect(note).toBeDefined()
-    expect(page).toBeDefined()
-    if (!post || !note || !page) return
+    if (!post || !note) return
 
-    const [postDetail, noteDetail, pageDetail] = await Promise.all([
+    const [postDetail, noteDetail] = await Promise.all([
       apiClient.post.getPost(post.category.slug, post.slug, { lang: 'zh-CN' }),
       apiClient.note.getNoteByNid(note.nid, { lang: 'zh-CN' }),
-      apiClient.page.getBySlug(page.slug),
     ])
 
     expect(postDetail).toMatchObject({
@@ -94,12 +90,23 @@ liveDescribe('Core 14 live integration', () => {
       id: note.id,
       nid: note.nid,
     })
+    expect(metaFor(postDetail, postDetail.$meta).interaction).toBeDefined()
+  }, 30_000)
+
+  it('loads a native page detail when a public page exists', async (context) => {
+    const pages = await apiClient.page.getList(1, 1)
+    const page = pages.data[0]
+    if (!page) {
+      context.skip('The live Core has no public pages to verify')
+      return
+    }
+
+    const pageDetail = await apiClient.page.getBySlug(page.slug)
     expect(pageDetail).toMatchObject({
       createdAt: expect.any(String),
       id: page.id,
       slug: page.slug,
     })
-    expect(metaFor(postDetail, postDetail.$meta).interaction).toBeDefined()
   }, 30_000)
 
   it('loads local search with fallback metadata and native pagination', async () => {

@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
 import { PublicEnvScript } from 'next-runtime-env'
-import { fetch } from 'ofetch'
 import type { PropsWithChildren } from 'react'
 
 import PKG from '~/../package.json'
@@ -19,14 +17,13 @@ import { TocAutoScroll } from '~/components/modules/toc/TocAutoScroll'
 import { routing } from '~/i18n/routing'
 import { PreRenderError } from '~/lib/error-factory'
 import { sansFont, serifFont } from '~/lib/fonts'
-import { apiClient } from '~/lib/request'
 import { AggregationProvider } from '~/providers/root/aggregation-data-provider'
 import { AppFeatureProvider } from '~/providers/root/app-feature-provider'
 import { HydrateuserAuthProvider } from '~/providers/root/hydrate-user-auth-provider'
 import { ScriptInjectProvider } from '~/providers/root/script-inject-provider'
 
 import { WebAppProviders } from '../../providers/root'
-import { fetchAggregationData } from './api'
+import { fetchAggregationData, fetchOwnerAuth } from './api'
 
 const { version } = PKG
 
@@ -185,25 +182,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   const themeConfig = data.theme
 
-  const headers = new Headers()
-
-  headers.append(
-    'cookie',
-    (await cookies())
-      .getAll()
-      .map((cookie) => `${cookie.name}=${cookie.value}`)
-      .join('; '),
-  )
-
-  headers.append('user-agent', 'Shiro')
-
-  const userAuth = await fetch(
-    apiClient.proxy('owner')('check_logged').toString(true),
-    { headers },
-  )
-    .then((res) => res.json())
-    .then((res) => !!res.ok)
-    .catch(() => false)
+  const userAuth = await fetchOwnerAuth()
 
   return (
     <>

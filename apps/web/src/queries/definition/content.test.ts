@@ -26,6 +26,26 @@ afterEach(() => {
 })
 
 describe('content query serialization', () => {
+  it('loads adjacent notes from a V3 array without a second data unwrap', async () => {
+    const notes = [
+      { id: '9223372036854775807', nid: 1, title: 'First' },
+      { id: '9223372036854775806', nid: 2, title: 'Second' },
+    ]
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ data: notes, meta: { view: 'card' } }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await queryClient.fetchQuery(
+      note.timeline(notes[0].id, 'en'),
+    )
+    expect(result).toEqual(notes)
+    const url = new URL(fetchMock.mock.calls[0]![0] as string)
+    expect(url.pathname).toBe(`/api/v3/notes/list/${notes[0].id}`)
+    expect(url.searchParams.get('lang')).toBe('en')
+    expect(url.searchParams.get('size')).toBe('10')
+  })
+
   it.each([
     ['post', () => queryClient.fetchQuery(post.bySlug('tech', 'hello', 'en'))],
     ['note', () => queryClient.fetchQuery(note.byNid('1', null, 'en'))],

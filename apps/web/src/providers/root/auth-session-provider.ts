@@ -6,24 +6,26 @@ import { useEffect } from 'react'
 import { fetchAppUrl } from '~/atoms'
 import { setIsOwnerLogged } from '~/atoms/hooks/owner'
 import { setSessionReader } from '~/atoms/hooks/reader'
-import type { authClient } from '~/lib/authjs'
 import { apiClient } from '~/lib/request'
+import type { SessionReader } from '~/models/session'
 
-type AdapterUser = typeof authClient.$Infer.Session
+type AdapterUser = SessionReader & { role?: 'owner' | 'reader' }
 export const AuthSessionProvider: Component = ({ children }) => {
   const { data: session } = useQuery({
     queryKey: ['session'],
     refetchOnMount: 'always',
     queryFn: () =>
-      apiClient.proxy.auth.session.get<AdapterUser>({
+      apiClient.proxy.auth.session.get<AdapterUser | null>({
         params: {
           r: nanoid(),
         },
       }),
   })
   useEffect(() => {
+    // Preserve the server's auth result until the session request completes.
+    if (session === undefined) return
+    setIsOwnerLogged(session?.role === 'owner')
     if (!session) {
-      setIsOwnerLogged(false)
       setSessionReader(null)
       return
     }
@@ -31,7 +33,6 @@ export const AuthSessionProvider: Component = ({ children }) => {
 
     setSessionReader(transformedData)
     if (transformedData.role === 'owner') {
-      setIsOwnerLogged(true)
       fetchAppUrl()
     }
   }, [session])

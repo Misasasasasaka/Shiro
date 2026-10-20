@@ -80,7 +80,7 @@ const fixture = vi.hoisted(() => {
       ],
       url: 'https://shiro.example',
     })),
-    getAggregate: vi.fn(async () => aggregate),
+    getAggregate: vi.fn(async (): Promise<unknown> => aggregate),
     getNote: vi.fn(async () => note),
     getPage: vi.fn(async () => page),
     getPost: vi.fn(async () => post),
@@ -191,6 +191,27 @@ describe('Core 14 generated output contracts', () => {
     expect(xml).toContain('Fri, 17 Jul 2026 00:00:00 GMT')
     expect(xml).not.toContain('Invalid Date')
   })
+
+  it.each([
+    { name: 'theme', theme: undefined },
+    { name: 'config', theme: {} },
+    { name: 'module', theme: { config: { site: {} } } },
+    { name: 'rss', theme: { config: { module: { activity: {} } } } },
+  ])(
+    'renders RSS when the optional $name configuration is missing',
+    async ({ theme }) => {
+      fixture.getAggregate.mockResolvedValueOnce({
+        ...fixture.aggregate,
+        theme,
+      })
+
+      const response = await getFeed()
+      const xml = await response.text()
+      expect(response.status).toBe(200)
+      expect(xml).toContain('<title><![CDATA[Core 14 post]]></title>')
+      expect(xml).toContain('https://shiro.example/favicon.ico')
+    },
+  )
 
   it('renders says and thinking feeds with Core 14 timestamps', async () => {
     const [saysResponse, thinkingResponse] = await Promise.all([

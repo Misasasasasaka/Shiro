@@ -41,8 +41,8 @@ export async function GET() {
   const { title, description } = agg.seo
 
   const now = new Date()
-  const custom_elements = agg.theme?.config.module.rss.custom_elements
-  const noRSS = agg.theme?.config.module.rss.noRSS
+  const custom_elements = agg.theme?.config?.module?.rss?.custom_elements
+  const noRSS = agg.theme?.config?.module?.rss?.noRSS
 
   const followChallengeIndex = custom_elements
     ? custom_elements.findIndex((item) => item.follow_challenge)
@@ -65,9 +65,8 @@ export async function GET() {
     ]
   }
 
-  const imageUrl = agg.theme?.config?.site?.favicon.startsWith('/')
-    ? `${url}${agg.theme?.config?.site?.favicon}`
-    : agg.theme?.config?.site?.favicon
+  const favicon = agg.theme?.config?.site?.favicon ?? '/favicon.ico'
+  const imageUrl = favicon.startsWith('/') ? `${url}${favicon}` : favicon
 
   const feed = new RSS({
     title,

@@ -9,6 +9,13 @@ import type { SiteRootData } from '~/types/site'
 const cacheTime = appStaticConfig.cache.enabled
   ? appStaticConfig.cache.ttl.aggregation
   : 1
+
+export const fetchOwnerAuth = () =>
+  apiClient.owner
+    .checkTokenValid()
+    .then(({ ok }) => !!ok)
+    .catch(() => false)
+
 export const fetchAggregationData = async () => {
   await attachServerFetch()
   const queryClient = getQueryClient()
