@@ -5,7 +5,7 @@ import * as React from 'react'
 import { memo } from 'react'
 
 import { FloatPopover } from '~/components/ui/float-popover'
-import { Link } from '~/i18n/navigation'
+import { DocumentLink } from '~/components/ui/link/DocumentLink'
 import { clsxm } from '~/lib/helper'
 
 import type { IHeaderMenu } from '../config'
@@ -38,7 +38,7 @@ export const MenuPopover: Component<{
 MenuPopover.displayName = 'MenuPopover'
 
 const Item = memo(function Item(props: IHeaderMenu) {
-  const { title, titleKey, path, icon } = props
+  const { title, titleKey, path, icon, reloadDocument } = props
   const t = useTranslations('common')
 
   const displayTitle = titleKey ? t(titleKey as any) : title
@@ -48,9 +48,10 @@ const Item = memo(function Item(props: IHeaderMenu) {
   const centered = lang === 'zh' || icon!
 
   return (
-    <Link
+    <DocumentLink
       key={path}
       href={`${path}`}
+      reloadDocument={reloadDocument}
       className={clsxm(
         'relative flex w-full items-center space-x-2 px-4 py-3 duration-200 hover:bg-accent/5 hover:text-accent',
         centered ? 'justify-around' : 'justify-start gap-4',
@@ -59,6 +60,6 @@ const Item = memo(function Item(props: IHeaderMenu) {
     >
       {!!icon && <span>{icon}</span>}
       <span>{displayTitle}</span>
-    </Link>
+    </DocumentLink>
   )
 })

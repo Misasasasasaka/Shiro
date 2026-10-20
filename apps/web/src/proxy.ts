@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import createIntlMiddleware from 'next-intl/middleware'
 
+import { API_URL } from './constants/env'
 import {
   REQUEST_GEO,
   REQUEST_HOST,
@@ -13,6 +14,7 @@ import {
 } from './constants/system'
 import { defaultLocale, type Locale, locales } from './i18n/config'
 import { routing } from './i18n/routing'
+import { getStandalonePageResponse } from './lib/standalone-page-response'
 
 const intlMiddleware = createIntlMiddleware(routing)
 
@@ -215,6 +217,9 @@ export async function proxy(req: NextRequest) {
         },
       })
     }
+
+    const standaloneResponse = await getStandalonePageResponse(req, API_URL)
+    if (standaloneResponse) return standaloneResponse
 
     const intlResponse = intlMiddleware(req)
 

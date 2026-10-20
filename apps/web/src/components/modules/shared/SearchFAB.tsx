@@ -23,10 +23,10 @@ import { EmptyIcon } from '~/components/icons/empty'
 import { MotionButtonBase } from '~/components/ui/button'
 import { FABPortable } from '~/components/ui/fab'
 import { FloatPopover } from '~/components/ui/float-popover'
+import { DocumentLink } from '~/components/ui/link/DocumentLink'
 import { microDampingPreset } from '~/constants/spring'
 import useDebounceValue from '~/hooks/common/use-debounce-value'
 import { useIsClient } from '~/hooks/common/use-is-client'
-import { Link } from '~/i18n/navigation'
 import { apiClient } from '~/lib/request'
 import { type CoreSearchResult, normalizeCoreSearchPage } from '~/lib/search'
 import { jotaiStore } from '~/lib/store'
@@ -102,6 +102,7 @@ interface SearchListItem {
   subtitle: string
   url: string
   id: string
+  reloadDocument: boolean
 }
 
 const SearchPanelImpl = () => {
@@ -139,7 +140,7 @@ const SearchPanelImpl = () => {
             }
             case 'page': {
               subtitle = t('search_page')
-              url = `/${item.slug}`
+              url = `/${encodeURIComponent(item.slug)}`
               break
             }
           }
@@ -151,6 +152,7 @@ const SearchPanelImpl = () => {
               : subtitle,
             id: item.id,
             url,
+            reloadDocument: item.type === 'page',
           }
         }),
       [t],
@@ -297,8 +299,9 @@ const SearchItem = memo(function SearchItem({
         startTransition(() => jotaiStore.set(currentSelectAtom, index))
       }}
     >
-      <Link
+      <DocumentLink
         href={item.url}
+        reloadDocument={item.reloadDocument}
         className="relative z-10 flex w-full justify-between p-3"
       >
         <span className="block min-w-0 flex-1 shrink-0 truncate">
@@ -307,7 +310,7 @@ const SearchItem = memo(function SearchItem({
         <span className="block min-w-0 shrink-0 grow-0 text-zinc-800 dark:text-slate-200/80">
           {item.subtitle}
         </span>
-      </Link>
+      </DocumentLink>
     </li>
   )
 })

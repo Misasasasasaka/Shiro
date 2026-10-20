@@ -14,6 +14,7 @@
 ## 功能概览
 
 - **内容展示**：文章、手记、独立页面，以及支持评论、点赞和 RSS 的思考（Recently）页面。
+- **独立 HTML 页面**：mx-space 页面设置 `meta.render: "html"` 后，在原 `/slug` 地址整页运行 HTML/CSS/JS，脱离博客布局。[使用说明](docs/standalone-html-pages.md)。
 - **首页与时间线**：Hero 区域、活动流、风向标导航，以及按年份和内容类型筛选的时间线。
 - **阅读体验**：Markdown 扩展语法、富文本渲染与 Spring 弹性动画；正文 JSON 缺失或渲染失败时回退到 Markdown。
 - **评论互动**：支持回复，并区分评论已发布、待自动审核、待博主审核和已拒绝等状态。
@@ -122,6 +123,7 @@ docker compose up -d
 | ---------------------------------------------------------------- | ------------------------------------------------ |
 | [Core 14 兼容与部署](docs/core14.md)                             | HTTP V3、评论审核、正文渲染、验证与回滚。        |
 | [Core 14 WebSocket 适配](docs/core14-websocket.md)               | 连接配置、反向代理、事件协议与重连行为。         |
+| [独立 HTML 页面](docs/standalone-html-pages.md)                  | 页面配置、完整 HTML 示例、资源引用与恢复方式。 |
 | [上游部署教程](https://mx-space.js.org/docs/themes/shiro/deploy) | Shiro 通用部署说明；本分支配置以仓库内文档为准。 |
 | [Markdown 扩展语法](https://shiro.innei.in/#/markdown)           | 写作时可使用的扩展语法。                         |
 | [更新记录](CHANGELOG.md)                                         | 项目历史版本记录。                               |

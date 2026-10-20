@@ -20,6 +20,7 @@ export interface IHeaderMenu {
   title: string
   titleKey?: string
   path: string
+  reloadDocument?: boolean
   type?: string
   icon?: ReactNode
   subMenu?: Omit<IHeaderMenu, 'exclude'>[]

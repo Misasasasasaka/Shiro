@@ -2,6 +2,7 @@
 
 import { createContext, use, useEffect, useMemo, useState } from 'react'
 
+import { isStandaloneHtmlPage } from '~/lib/page-render-mode'
 import {
   useAggregationSelector,
   useAppConfigSelector,
@@ -48,8 +49,9 @@ export const HeaderDataConfigureProvider: Component = ({ children }) => {
         nextMenuConfig[homeIndex].subMenu = []
         for (const page of pages) {
           nextMenuConfig[homeIndex].subMenu!.push({
-            path: `/${page.slug}`,
+            path: `/${encodeURIComponent(page.slug)}`,
             title: page.title,
+            reloadDocument: isStandaloneHtmlPage(page),
           })
         }
       }

@@ -8,8 +8,9 @@ import { Fragment, useMemo } from 'react'
 import { useFocusReading } from '~/atoms/hooks/reading'
 import { GoToAdminEditingButton } from '~/components/modules/shared/GoToAdminEditingButton'
 import { WithArticleSelectionAction } from '~/components/modules/shared/WithArticleSelectionAction'
-import { Link } from '~/i18n/navigation'
+import { DocumentLink } from '~/components/ui/link/DocumentLink'
 import { noopArr } from '~/lib/noop'
+import { isStandaloneHtmlPage } from '~/lib/page-render-mode'
 import { MarkdownImageRecordProvider } from '~/providers/article/MarkdownImageRecordProvider'
 import { useCurrentPageDataSelector } from '~/providers/page/CurrentPageDataProvider'
 import {
@@ -93,26 +94,28 @@ export const PagePaginator = () => {
       <div className="justify-start">
         {hasPrev && (
           <Fragment>
-            <Link
-              href={`/${pages[indexInPages - 1].slug}`}
+            <DocumentLink
+              href={`/${encodeURIComponent(pages[indexInPages - 1].slug)}`}
+              reloadDocument={isStandaloneHtmlPage(pages[indexInPages - 1])}
               className="flex flex-col justify-end text-left leading-loose"
             >
               <span className="text-accent">{t('look_back')}</span>
               <span>{pages[indexInPages - 1].title}</span>
-            </Link>
+            </DocumentLink>
           </Fragment>
         )}
       </div>
       <div className="justify-end">
         {hasNext && (
           <Fragment>
-            <Link
-              href={`/${pages[indexInPages + 1].slug}`}
+            <DocumentLink
+              href={`/${encodeURIComponent(pages[indexInPages + 1].slug)}`}
+              reloadDocument={isStandaloneHtmlPage(pages[indexInPages + 1])}
               className="flex flex-col justify-end text-right leading-loose"
             >
               <span className="text-accent">{t('continue_reading')}</span>
               <span>{pages[indexInPages + 1].title}</span>
-            </Link>
+            </DocumentLink>
           </Fragment>
         )}
       </div>

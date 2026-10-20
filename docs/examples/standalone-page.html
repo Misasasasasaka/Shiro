@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="由 mx-space 管理的独立 HTML 页面示例" />
+    <title>独立 HTML 页面</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #102129;
+        color: #e7f4ee;
+        font:
+          18px/1.7 system-ui,
+          sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 640px;
+      }
+      h1 {
+        font-size: clamp(32px, 7vw, 56px);
+        line-height: 1.2;
+      }
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 12px 20px;
+        background: #adf3cf;
+        color: #102129;
+        font: inherit;
+        cursor: pointer;
+      }
+      a {
+        color: #adf3cf;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>MX SPACE · HTML</p>
+      <h1>这是你自己的完整页面。</h1>
+      <p>内容由 mx-space 管理，HTML、CSS 和 JavaScript 直接在浏览器中运行。</p>
+      <button id="counter" type="button">点击了 0 次</button>
+      <p id="status" role="status">等待交互</p>
+      <p><a href="/">返回博客首页</a></p>
+    </main>
+    <script>
+      let count = 0
+      document.querySelector('#counter').addEventListener('click', (event) => {
+        count += 1
+        event.currentTarget.textContent = `点击了 ${count} 次`
+        document.querySelector('#status').textContent = 'JavaScript 运行正常'
+      })
+    </script>
+  </body>
+</html>

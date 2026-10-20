@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { proxy } from './proxy'
 
+vi.mock('./constants/env', () => ({ API_URL: 'https://core.example/api/v3' }))
 vi.mock('@vercel/functions', () => ({
   geolocation: () => {},
   ipAddress: () => {},
@@ -26,6 +27,8 @@ vi.mock('next-intl/middleware', async () => {
     },
   }
 })
+
+afterEach(() => vi.unstubAllGlobals())
 
 describe('locale proxy', () => {
   it('rewrites an unprefixed default-locale route without redirecting', async () => {
@@ -85,5 +88,47 @@ describe('locale proxy', () => {
     expect(response.headers.get('x-middleware-rewrite')).toBe(
       'http://localhost:2323/zh/og?data=fixture',
     )
+  })
+
+  it('serves marked HTML before locale negotiation and blog layouts', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          data: {
+            meta: { render: 'html' },
+            contentFormat: 'markdown',
+            text: '<html>Original</html>',
+          },
+        }),
+      ),
+    )
+    const response = await proxy(
+      new NextRequest('http://localhost:2323/demo', {
+        headers: { 'accept-language': 'ja', cookie: 'NEXT_LOCALE=ja' },
+      }),
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull()
+    expect(response.headers.get('location')).toBeNull()
+    expect(await response.text()).toBe('<html>Original</html>')
+  })
+
+  it('retains ordinary page localization without probing its internal rewrite twice', async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({ data: { text: '# About' } }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const response = await proxy(new NextRequest('http://localhost:2323/about'))
+    expect(response.headers.get('x-middleware-rewrite')).toBe(
+      'http://localhost:2323/zh/about',
+    )
+    const internal = await proxy(
+      new NextRequest('http://localhost:2323/zh/about', {
+        headers: { request_pathname: '/about', 'x-next-intl-locale': 'zh' },
+      }),
+    )
+    expect(internal.headers.get('location')).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
