@@ -1,5 +1,4 @@
 import { simpleCamelcaseKeys as camelcaseKeys } from '@mx-space/api-client'
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 import { getSocketWebSessionId } from '~/atoms/hooks/socket'
 import { setSocketIsConnect } from '~/atoms/socket'
@@ -9,6 +8,7 @@ import { isDev, isServerSide } from '~/lib/env'
 import type { SocketEmitEnum } from '~/types/events'
 
 import { eventHandler } from './handler'
+import type { SocketRouter } from './handlers/types'
 import {
   buildGatewayUrl,
   createSocketEmission,
@@ -19,7 +19,7 @@ import {
 } from './protocol'
 
 class SocketWorker {
-  private router?: AppRouterInstance
+  private router?: SocketRouter
   private worker: Worker | null = null
 
   constructor() {
@@ -33,7 +33,7 @@ class SocketWorker {
     this.worker = worker
   }
 
-  setRouter(router: AppRouterInstance) {
+  setRouter(router: SocketRouter) {
     this.router = router
   }
 

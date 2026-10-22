@@ -1,5 +1,3 @@
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-
 import { isDev } from '~/lib/env'
 import { type ClientBusinessEvent, EventTypes } from '~/types/events'
 
@@ -9,7 +7,11 @@ import { noteHandlers } from './handlers/note'
 import { pageHandlers } from './handlers/page'
 import { postHandlers } from './handlers/post'
 import { sayHandlers } from './handlers/say'
-import type { EventHandler, EventHandlerContext } from './handlers/types'
+import type {
+  EventHandler,
+  EventHandlerContext,
+  SocketRouter,
+} from './handlers/types'
 import { visitorEvents, visitorHandler } from './handlers/visitor'
 import { WsEvent } from './util'
 
@@ -29,7 +31,7 @@ for (const event of visitorEvents) {
 export const eventHandler = (
   type: string,
   data: unknown,
-  router?: AppRouterInstance,
+  router?: SocketRouter,
 ) => {
   const ctx: EventHandlerContext = { router }
   const handler = handlerMap[type]

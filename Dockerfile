@@ -1,6 +1,5 @@
-FROM node:22-alpine AS base
+FROM node:22.23.4-alpine@sha256:ebc216c22db53dbde85719a874978d5aec04e6e405ad26a3804c6f9abc4ca1a9 AS base
 
-RUN npm install -g --arch=x64 --platform=linux sharp
 RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
 
 FROM base AS deps
@@ -67,5 +66,4 @@ COPY --from=builder /app/apps/web/.next/server ./apps/web/.next/server
 EXPOSE 2323
 
 ENV PORT=2323
-ENV NEXT_SHARP_PATH=/usr/local/lib/node_modules/sharp
 CMD ["sh", "-c", "echo 'Mix Space Web [Shiro] Image.' && node apps/web/server.js"]

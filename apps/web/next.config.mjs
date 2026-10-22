@@ -55,6 +55,8 @@ let nextConfig = {
         hostname: '**',
       },
     ],
+    // Keep image optimization outside private networks, including DNS redirects.
+    dangerouslyAllowLocalIP: false,
     dangerouslyAllowSVG: true,
     contentSecurityPolicy:
       "default-src 'self'; script-src 'none'; sandbox; style-src 'unsafe-inline';",

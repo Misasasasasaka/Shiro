@@ -1,9 +1,11 @@
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-
 import { TrackerAction } from '~/constants/tracker'
 
+export interface SocketRouter {
+  replace(href: string): void
+}
+
 export interface EventHandlerContext {
-  router?: AppRouterInstance
+  router?: SocketRouter
 }
 
 export type EventHandler = (data: unknown, ctx: EventHandlerContext) => void
