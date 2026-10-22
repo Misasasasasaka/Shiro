@@ -11,7 +11,7 @@ export default function GlobalNotFound() {
   return (
     <html lang="zh-CN" className="noise themed" suppressHydrationWarning>
       <head>
-        <PublicEnvScript />
+        <PublicEnvScript disableNextScript />
         <Global />
       </head>
       <body suppressHydrationWarning>

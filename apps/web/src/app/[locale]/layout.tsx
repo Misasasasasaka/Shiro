@@ -160,7 +160,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     return (
       <html lang={locale} className="noise themed" suppressHydrationWarning>
         <head>
-          <PublicEnvScript />
+          <PublicEnvScript disableNextScript />
           <SayHi />
         </head>
         <body
@@ -190,7 +190,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <HydrateuserAuthProvider isLogged={userAuth} />
         <html lang={locale} className="noise themed" suppressHydrationWarning>
           <head>
-            <PublicEnvScript />
+            <PublicEnvScript disableNextScript />
             <Global />
             <SayHi />
             <HydrationEndDetector />
