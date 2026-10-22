@@ -3,9 +3,9 @@ import type { ImageResponseOptions } from 'next/server'
 
 import { apiClient } from '~/lib/request'
 
-export const revalidate = 86400 // 24 hours
+export const dynamic = 'force-dynamic'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 const resOptions = {
   width: 1200,
