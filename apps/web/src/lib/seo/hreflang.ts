@@ -31,10 +31,10 @@ export const buildLanguageAlternates = (
 
 const getLanguageAndScript = (code: string) => {
   try {
-    const { language, script } = new Intl.Locale(
-      code.trim().replaceAll('_', '-'),
-    ).maximize()
-    return `${language}-${script}`
+    const locale = new Intl.Locale(code.trim().replaceAll('_', '-'))
+    const { language } = locale
+    if (!language || language === 'und') return
+    return `${language}-${locale.maximize().script}`
   } catch {
     return
   }

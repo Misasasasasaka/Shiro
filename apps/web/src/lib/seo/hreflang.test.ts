@@ -35,4 +35,13 @@ describe('content language alternates', () => {
       }),
     ).toEqual(['en'])
   })
+
+  it('skips undetermined languages even when a script is specified', () => {
+    expect(
+      getSupportedLocalesFromTranslations({
+        sourceLang: 'und',
+        availableTranslations: ['und-Hans', 'und-Jpan'],
+      }),
+    ).toEqual([])
+  })
 })
