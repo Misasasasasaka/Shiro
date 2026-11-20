@@ -2,16 +2,14 @@
 
 import type { SubscribeTypeToBitMap } from '@mx-space/api-client'
 import { useTranslations } from 'next-intl'
-import type * as React from 'react'
-import type { FC } from 'react'
-import { useEffect, useReducer } from 'react'
+import type { FC, FormEventHandler } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 
 import { IcBaselineTelegram } from '~/components/icons/platform/Telegram'
 import { StyledButton } from '~/components/ui/button'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input/Input'
 import { useStateToRef } from '~/hooks/common/use-state-ref'
-import { preventDefault } from '~/lib/dom'
 import { registerPushWorker } from '~/lib/push-worker'
 import { apiClient } from '~/lib/request'
 import { toast } from '~/lib/toast'
@@ -20,7 +18,7 @@ import {
   useAppConfigSelector,
 } from '~/providers/root/aggregation-data-provider'
 
-import { useIsEnableSubscribe, useSubscribeStatusQuery } from './hooks'
+import { useSubscribeStatusQuery } from './hooks'
 
 interface SubscribeModalProps {
   onConfirm: () => void
@@ -71,8 +69,7 @@ export const SubscribeModal: FC<SubscribeModalProps> = ({
 }) => {
   const t = useTranslations('subscribe')
   const [state, dispatch] = useFormData()
-
-  const canSub = useIsEnableSubscribe()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const stateRef = useStateToRef(state)
 
@@ -100,22 +97,34 @@ export const SubscribeModal: FC<SubscribeModalProps> = ({
     registerPushWorker()
   }, [])
 
-  const query = useSubscribeStatusQuery()
+  const { data: status } = useSubscribeStatusQuery()
+  const types = (
+    Object.keys(state.types) as (keyof typeof state.types)[]
+  ).filter((type) => status?.allowTypes.includes(type))
+  const selectedTypes = types.filter((type) => state.types[type])
+  const email = state.email.trim()
 
-  const handleSubList: React.EventHandler<any> = async (e) => {
-    if (!canSub) {
+  const handleSubList: FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault()
+    if (!status?.enable) {
       toast.error(t('not_enabled'))
       return
     }
-    preventDefault(e)
-    const { email, types } = state
-    await apiClient.subscribe.subscribe(
-      email,
-      // @ts-ignore
-      Object.keys(types).filter((name) => state.types[name]) as any[],
-    )
+    if (!email || selectedTypes.length === 0 || isSubmitting) return
 
-    toast.success(t('success'))
+    setIsSubmitting(true)
+    try {
+      await apiClient.subscribe.subscribe(email, selectedTypes)
+    } catch {
+      toast.error(t('request_failed'))
+      return
+    } finally {
+      setIsSubmitting(false)
+    }
+
+    // Core 14 subscribes immediately. Core 18 requests confirmation, but
+    // uses the same empty HTTP response even when it suppresses a resend.
+    toast.success(t('request_received'))
     dispatch({ type: 'reset' })
     onConfirm()
   }
@@ -126,7 +135,7 @@ export const SubscribeModal: FC<SubscribeModalProps> = ({
     <form onSubmit={handleSubList} className="flex flex-col gap-5">
       <p className="text-sm">{t('welcome', { title: title || '' })}</p>
       <Input
-        type="text"
+        type="email"
         placeholder={t('form_email')}
         required
         value={state.email}
@@ -135,33 +144,31 @@ export const SubscribeModal: FC<SubscribeModalProps> = ({
         }}
       />
       <div className="mb-2 flex gap-10">
-        {Object.keys(state.types)
-          .filter((type) => query.data?.allowTypes.includes(type as any))
-          .map((name) => (
-            <fieldset
-              className="children:cursor-pointer inline-flex items-center text-sm"
-              key={name}
-            >
-              <Checkbox
-                id={name}
-                checked={state.types[name as keyof typeof state.types]}
-                onCheckedChange={(v) => {
-                  if (typeof v === 'boolean') {
-                    dispatch({
-                      type: 'set',
-                      data: {
-                        types: {
-                          ...state.types,
-                          [name]: v,
-                        },
+        {types.map((name) => (
+          <fieldset
+            className="children:cursor-pointer inline-flex items-center text-sm"
+            key={name}
+          >
+            <Checkbox
+              id={name}
+              checked={state.types[name]}
+              onCheckedChange={(v) => {
+                if (typeof v === 'boolean') {
+                  dispatch({
+                    type: 'set',
+                    data: {
+                      types: {
+                        ...state.types,
+                        [name]: v,
                       },
-                    })
-                  }
-                }}
-              />
-              <label htmlFor={name}>{t(subscribeTextKeys[name])}</label>
-            </fieldset>
-          ))}
+                    },
+                  })
+                }
+              }}
+            />
+            <label htmlFor={name}>{t(subscribeTextKeys[name])}</label>
+          </fieldset>
+        ))}
       </div>
 
       <p className="-mt-2 text-sm">
@@ -190,7 +197,18 @@ export const SubscribeModal: FC<SubscribeModalProps> = ({
         </p>
       )}
       <div className="flex justify-end">
-        <StyledButton disabled={!state.email}>{t('submit')}</StyledButton>
+        <StyledButton
+          type="submit"
+          disabled={
+            !status?.enable ||
+            !email ||
+            selectedTypes.length === 0 ||
+            isSubmitting
+          }
+          isLoading={isSubmitting}
+        >
+          {t('submit')}
+        </StyledButton>
       </div>
     </form>
   )

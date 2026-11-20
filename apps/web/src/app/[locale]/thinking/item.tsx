@@ -27,6 +27,7 @@ import { RelativeTime } from '~/components/ui/relative-time'
 import { Link, usePathname } from '~/i18n/navigation'
 import { clsxm } from '~/lib/helper'
 import { sample } from '~/lib/lodash'
+import { submitRecentlyAttitude } from '~/lib/recently-attitude'
 import { apiClient } from '~/lib/request'
 import { routeBuilder, Routes } from '~/lib/route-builder'
 import { toast } from '~/lib/toast'
@@ -41,27 +42,23 @@ export const ThinkingItem: FC<{
   const owner = useAggregationSelector((a) => a.user)!
 
   const handleUp = (id: string) => {
-    apiClient.recently
-      .attitude(id, RecentlyAttitudeEnum.Up)
-      .then(({ code }) => {
-        if (code === RecentlyAttitudeResultEnum.Inc) {
-          toast.success(sample(['(￣▽￣*) ゞ', '(＾▽＾)']))
-        } else {
-          toast.success('[○･｀Д´･○]')
-        }
-      })
+    submitRecentlyAttitude(id, RecentlyAttitudeEnum.Up).then(({ code }) => {
+      if (code === RecentlyAttitudeResultEnum.Inc) {
+        toast.success(sample(['(￣▽￣*) ゞ', '(＾▽＾)']))
+      } else {
+        toast.success('[○･｀Д´･○]')
+      }
+    })
   }
 
   const handleDown = (id: string) => {
-    apiClient.recently
-      .attitude(id, RecentlyAttitudeEnum.Down)
-      .then(({ code }) => {
-        if (code === RecentlyAttitudeResultEnum.Inc) {
-          toast.success('(╥_╥)')
-        } else {
-          toast.success('ヽ (・∀・) ﾉ')
-        }
-      })
+    submitRecentlyAttitude(id, RecentlyAttitudeEnum.Down).then(({ code }) => {
+      if (code === RecentlyAttitudeResultEnum.Inc) {
+        toast.success('(╥_╥)')
+      } else {
+        toast.success('ヽ (・∀・) ﾉ')
+      }
+    })
   }
 
   const { present } = useModalStack()
