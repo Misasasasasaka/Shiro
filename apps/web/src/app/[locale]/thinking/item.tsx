@@ -1,11 +1,7 @@
 'use client'
 
 import type { RecentlyModel, RecentlyRefSummary } from '@mx-space/api-client'
-import {
-  RecentlyAttitudeEnum,
-  RecentlyAttitudeResultEnum,
-  RecentlyRefTypes,
-} from '@mx-space/api-client'
+import { RecentlyRefTypes } from '@mx-space/api-client'
 import type { InfiniteData } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
@@ -26,40 +22,19 @@ import { useModalStack } from '~/components/ui/modal'
 import { RelativeTime } from '~/components/ui/relative-time'
 import { Link, usePathname } from '~/i18n/navigation'
 import { clsxm } from '~/lib/helper'
-import { sample } from '~/lib/lodash'
-import { submitRecentlyAttitude } from '~/lib/recently-attitude'
 import { apiClient } from '~/lib/request'
 import { routeBuilder, Routes } from '~/lib/route-builder'
 import { toast } from '~/lib/toast'
 import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
 
 import { QUERY_KEY } from './constants'
+import { ThinkingAttitudeButtons } from './ThinkingAttitudeButtons'
 
 export const ThinkingItem: FC<{
   item: RecentlyModel
 }> = memo(({ item }) => {
   const t = useTranslations('common')
   const owner = useAggregationSelector((a) => a.user)!
-
-  const handleUp = (id: string) => {
-    submitRecentlyAttitude(id, RecentlyAttitudeEnum.Up).then(({ code }) => {
-      if (code === RecentlyAttitudeResultEnum.Inc) {
-        toast.success(sample(['(￣▽￣*) ゞ', '(＾▽＾)']))
-      } else {
-        toast.success('[○･｀Д´･○]')
-      }
-    })
-  }
-
-  const handleDown = (id: string) => {
-    submitRecentlyAttitude(id, RecentlyAttitudeEnum.Down).then(({ code }) => {
-      if (code === RecentlyAttitudeResultEnum.Inc) {
-        toast.success('(╥_╥)')
-      } else {
-        toast.success('ヽ (・∀・) ﾉ')
-      }
-    })
-  }
 
   const { present } = useModalStack()
 
@@ -157,25 +132,7 @@ export const ThinkingItem: FC<{
               <span>{item.commentsIndex}</span>
             </button>
           )}
-          <button
-            onClick={() => {
-              handleUp(item.id)
-            }}
-          >
-            <i className="i-mingcute-heart-line" />
-            <span className="sr-only">{t('like')}</span>
-            <span>{item.up}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              handleDown(item.id)
-            }}
-          >
-            <i className="i-mingcute-heart-crack-line" />
-            <span className="sr-only">{t('dislike')}</span>
-            <span>{item.down}</span>
-          </button>
+          <ThinkingAttitudeButtons item={item} />
 
           <DeleteButton id={item.id} />
           <EditButton item={item} />
