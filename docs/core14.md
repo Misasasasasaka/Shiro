@@ -99,6 +99,8 @@ Core 14 搜索仍返回嵌套列表和 `current_page` / `total_page` 分页字�
 
 - Shiro 继续使用 V3 API 和现有 Node.js、SDK 版本。Core 18.2.1 仍接受
   V3 的旧排序参数，本次不要求升级前端运行时或替换 SDK。
+- 文章和手记的 `hreflang` 按语言和书写系统匹配 Core 16 起返回的 BCP 47 标签，
+  同时接受 Core 14 的短代码。繁体中文翻译不映射到简体中文路由。
 - 「思考」点赞和点踩改用 `POST /recently/attitude/:id?attitude=…`，
   不再走已弃用的 GET。Core 14.15.3、14.16.0 和 18.2.1 均支持 POST。
 - 邮件订阅在 Core 18 需要收件人确认链接，Core 14 则直接订阅成功；两者

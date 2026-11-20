@@ -29,23 +29,32 @@ export const buildLanguageAlternates = (
   )
 }
 
+const getLanguageAndScript = (code: string) => {
+  try {
+    const { language, script } = new Intl.Locale(
+      code.trim().replaceAll('_', '-'),
+    ).maximize()
+    return `${language}-${script}`
+  } catch {
+    return
+  }
+}
+
 export const getSupportedLocalesFromTranslations = (input?: {
   sourceLang?: string | null
   availableTranslations?: string[] | null
 }): Locale[] => {
-  const supported = new Set(locales as readonly string[])
-  const set = new Set<Locale>()
+  const contentLanguages = new Set(
+    [
+      input?.sourceLang ?? defaultLocale,
+      ...(input?.availableTranslations ?? []),
+    ].map(getLanguageAndScript),
+  )
 
-  const addIfSupported = (code?: string | null) => {
-    if (!code) return
-    if (supported.has(code)) set.add(code as Locale)
-  }
-
-  addIfSupported(input?.sourceLang ?? defaultLocale)
-  input?.availableTranslations?.forEach((code) => addIfSupported(code))
-
-  // Keep deterministic order (matching `locales`)
-  return locales.filter((l) => set.has(l))
+  return locales.filter((locale) => {
+    const language = getLanguageAndScript(HREFLANG_BY_LOCALE[locale])
+    return language !== undefined && contentLanguages.has(language)
+  })
 }
 
 export const stripLocaleFromPathname = (pathname: string) => {
