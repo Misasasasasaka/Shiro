@@ -2,5 +2,7 @@
   "page_title": "思考",
   "page_subtitle": "話を聞いてくれてありがとう",
   "post_placeholder": "今何を考えていますか？",
-  "send": "送信"
+  "send": "送信",
+  "attitude_failed": "リアクションの結果を確認できませんでした。しばらくしてからご確認ください。",
+  "attitude_count_refresh_failed": "リアクションを送信しました。件数を更新できませんでした。"
 }

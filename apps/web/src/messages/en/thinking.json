@@ -2,5 +2,7 @@
   "page_title": "Thinking",
   "page_subtitle": "Thanks for hearing me out",
   "post_placeholder": "What's on your mind?",
-  "send": "Send"
+  "send": "Send",
+  "attitude_failed": "Could not confirm your reaction. Please check again later.",
+  "attitude_count_refresh_failed": "Reaction saved. Could not refresh the counts."
 }

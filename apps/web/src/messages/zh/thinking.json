@@ -2,5 +2,7 @@
   "page_title": "思考",
   "page_subtitle": "谢谢你听我诉说",
   "post_placeholder": "此刻在想什么？",
-  "send": "发送"
+  "send": "发送",
+  "attitude_failed": "暂时无法确认表态结果，请稍后查看。",
+  "attitude_count_refresh_failed": "表态已提交，暂时无法刷新计数。"
 }
