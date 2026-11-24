@@ -108,6 +108,72 @@ describe('Core Lexical content normalization', () => {
     expect(text).toContain('Chart data truncated')
   })
 
+  it('preserves bounded captions and distinguishes valid empty chart data', () => {
+    const original = state([
+      {
+        spec: JSON.stringify({
+          data: [],
+          note: 'Draft numbers',
+          series: [{ key: 'value' }],
+          source: 'Local sample',
+          subtitle: 's'.repeat(140),
+          title: 'Benchmarks',
+          type: 'bar',
+          version: 1,
+          x: 'category',
+        }),
+        type: 'chart',
+        version: 1,
+      },
+    ])
+    const normalized = normalizeLexicalContent(original)
+    expect(normalized.root.children[0]).toMatchObject({
+      children: [
+        { children: [{ text: 'Benchmarks (chart data)' }] },
+        { children: [{ text: 's'.repeat(120) }] },
+        { children: [{ text: 'No data yet' }] },
+        { children: [{ text: 'Draft numbers' }] },
+        { children: [{ text: 'Source: Local sample' }] },
+      ],
+      type: 'quote',
+    })
+  })
+
+  it.each([
+    ['ms', '0 ms', '22 ms', '−2 ms'],
+    ['%', '0%', '22%', '−2%'],
+    ['$', '$0', '$22', '−$2'],
+  ])(
+    'uses %s only for finite numeric series values',
+    (unit, zero, value, negative) => {
+      const original = state([
+        {
+          spec: JSON.stringify({
+            data: [
+              { category: 123, zero: 0, value: 22, negative: -2, text: 'raw' },
+            ],
+            format: { unit },
+            series: ['zero', 'value', 'negative', 'missing', 'text'].map(
+              (key) => ({ key }),
+            ),
+            type: 'line',
+            version: 1,
+            x: 'category',
+          }),
+          type: 'chart',
+          version: 1,
+        },
+      ])
+      const editor = createEditor({ nodes: [QuoteNode] })
+      const normalized = editor.parseEditorState(
+        normalizeLexicalContent(original),
+      )
+      expect(normalized.read(() => $getRoot().getTextContent())).toContain(
+        `123: zero: ${zero}, value: ${value}, negative: ${negative}, missing: —, text: raw`,
+      )
+    },
+  )
+
   it('preserves rich quote children and attribution with built-in nodes', () => {
     const normalized = normalizeLexicalContent(
       state([
