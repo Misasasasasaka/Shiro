@@ -29,6 +29,81 @@ const createParagraphNode = (text: string): JsonObject => ({
 const getString = (value: unknown) =>
   typeof value === 'string' ? value.trim() : ''
 
+const chartTypes = new Set(['area', 'bar', 'line', 'pie', 'scatter'])
+const maxChartSpecLength = 256_000
+const maxChartRows = 50
+const maxChartSeries = 12
+
+const chartText = (value: unknown) => getString(value).slice(0, 120)
+
+function chartValue(row: JsonObject, key: string): string {
+  const value = Object.hasOwn(row, key) ? row[key] : undefined
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return chartText(value) || '—'
+}
+
+function chartFallback(node: JsonObject): JsonObject {
+  const fallback = createParagraphNode('Chart data unavailable')
+  if (node.version !== 1 || typeof node.spec !== 'string') return fallback
+  if (node.spec.length > maxChartSpecLength) return fallback
+
+  let spec: unknown
+  try {
+    spec = JSON.parse(node.spec)
+  } catch {
+    return fallback
+  }
+  if (
+    !isJsonObject(spec) ||
+    spec.version !== 1 ||
+    !chartTypes.has(getString(spec.type)) ||
+    typeof spec.x !== 'string' ||
+    !spec.x ||
+    !Array.isArray(spec.series) ||
+    !Array.isArray(spec.data)
+  )
+    return fallback
+
+  const series = spec.series.slice(0, maxChartSeries).flatMap((series) => {
+    if (!isJsonObject(series) || typeof series.key !== 'string' || !series.key)
+      return []
+    return [
+      {
+        key: series.key,
+        label: chartText(series.label) || chartText(series.key),
+      },
+    ]
+  })
+  const { x } = spec
+  const rows = spec.data.slice(0, maxChartRows).filter(isJsonObject)
+  if (series.length === 0 || rows.length === 0) return fallback
+
+  const title = chartText(spec.title)
+  const heading = title ? `${title} (chart data)` : 'Chart data'
+  const children = [
+    createParagraphNode(heading),
+    ...rows.map((row) =>
+      createParagraphNode(
+        `${chartValue(row, x)}: ${series
+          .map(({ key, label }) => `${label}: ${chartValue(row, key)}`)
+          .join(', ')}`,
+      ),
+    ),
+  ]
+  if (spec.data.length > maxChartRows || spec.series.length > maxChartSeries)
+    children.push(createParagraphNode('Chart data truncated'))
+
+  return {
+    children,
+    direction: null,
+    format: '',
+    indent: 0,
+    type: 'quote',
+    version: 1,
+    ...(isJsonObject(node.$) ? { $: node.$ } : {}),
+  }
+}
+
 /**
  * Core stores Lexical JSON as authored and can therefore return nodes created by
  * a newer editor than the renderer bundled with this Shiro release. Keep the
@@ -77,6 +152,8 @@ function normalizeNode(value: unknown): unknown {
   )
 
   switch (normalized.type) {
+    case 'chart':
+      return chartFallback(normalized)
     case 'rich-quote': {
       const attribution = getString(normalized.attribution)
       const children = Array.isArray(normalized.children)
